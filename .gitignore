@@ -1,0 +1,29 @@
+# Entorno y dependencias
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Herramientas
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Secretos: .env NUNCA se commitea. El que se commitea es .env.example.
+.env
+.env.local
+
+# Corpus descargado y normalizado: se regenera con `rag-lopd ingest`.
+# (Si al final decidimos publicar el corpus normalizado, se saca data/processed/ de aquí.)
+data/
+
+# Notas de trabajo y mapa de wayfinder: útiles en local, ruido en el repo público.
+.scratch/
+
+# Sistema
+.DS_Store
+Thumbs.db
