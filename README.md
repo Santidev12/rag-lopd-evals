@@ -25,8 +25,8 @@ La parte difícil no es responder. Es saber cuándo no se puede.
 | Unidad indexable | El apartado; al generador se le entrega el artículo entero (*small-to-big*) | El artículo como chunk: el art. 83 del RGPD son ~1.400 tokens y diez ideas, su vector sería una media borrosa. Ver [ADR 0001](docs/adr/0001-small-to-big-e-identificadores-semanticos.md) |
 | Identificadores | Semánticos propios (`rgpd:art-33.1`), con el ELI oficial como metadato | Índices de chunk: se rompen al cambiar el troceo y se llevan por delante el eval set |
 | Framework | Ninguno | LangChain / LlamaIndex esconden justo lo que hay que medir |
-| Embeddings | — | — |
-| Recuperación | — | — |
+| Embeddings | BGE-M3 vía DeepInfra | `voyage-law-2`: sin evidencia de soporte en español |
+| Recuperación | Denso (BGE-M3), 88,9 % recall@10 a nivel artículo | BM25 solo: se queda en 48,1 %, no cierra el hueco entre lenguaje corriente y término legal |
 | Generación | — | — |
 
 Las decisiones con su evidencia están en [`docs/research/`](docs/research/).
@@ -90,12 +90,32 @@ mientras que el BOE los deja como texto plano dentro de un `<p>` y hay que sacar
 no se pudieron partir quedan marcadas con `granularidad: articulo`, y el eval set dirá si se
 recuperan peor. Si esa proporción baja del 75 %, la ingesta falla en vez de seguir en silencio.
 
-Hay un primer motor de recuperación, BM25, con el contrato (`Recuperador`) que usará también el
-denso y el híbrido más adelante:
+Hay dos motores de recuperación detrás del mismo contrato (`Recuperador`): BM25 (léxico) y denso
+(BGE-M3 vía DeepInfra, `rag-lopd retrieval indexar` construye el índice una vez y cuesta
+céntimos). BM25 solo llega al 48,1 % de recall@10 a nivel artículo — se queda corto justo en las
+preguntas que usan lenguaje corriente en vez del término legal exacto. Denso cierra casi todo ese
+hueco: **88,9 % de recall@10** a nivel artículo, con o sin ruta jerárquica delante del texto
+(tampoco ayuda aquí — segunda vez que se mide y segunda vez que no aporta). Quedan 3 de 27
+preguntas sin el artículo correcto en el top-10, pendientes de diagnóstico:
 
 ```bash
-uv run rag-lopd retrieval evaluar     # recall@k con y sin ruta jerárquica delante del texto
-uv run rag-lopd retrieval buscar "..." # prueba una consulta a mano
+uv run rag-lopd retrieval indexar               # construye el índice denso (una vez, de pago)
+uv run rag-lopd retrieval evaluar --motor bm25   # o --motor denso
+uv run rag-lopd retrieval buscar "..." --motor denso
+```
+
+La generación recibe los artículos recuperados (el artículo entero, no el apartado) y devuelve
+una respuesta con cita o se abstiene. Que el score de recuperación no basta para decidir cuándo
+callarse está medido (AUC 0,83: callar al 88 % de lo que no tiene respuesta silencia al 36 % de lo
+que sí la tiene), así que la política mira el contenido: el modelo puede declarar `sin_respuesta`,
+y toda respuesta debe citar artículos que de verdad estaban en el contexto o cuenta como
+abstención. `generacion evaluar` mide sobre-respuesta y abstención indebida y guarda cada
+observación para recalcular sin volver a pagar:
+
+```bash
+uv run rag-lopd generacion preguntar "..."   # recupera, genera y enseña cita y coste
+uv run rag-lopd generacion evaluar           # las 50 preguntas; llama a Gemini (céntimos)
+uv run rag-lopd generacion resumir data/runs/<pasada>.jsonl
 ```
 
 Desarrollo:

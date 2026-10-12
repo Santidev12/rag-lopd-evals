@@ -14,6 +14,7 @@ from rag_lopd.config import Settings, get_settings
 from rag_lopd.descarga import Descargador
 from rag_lopd.eval.cli import app as app_eval
 from rag_lopd.fuentes import lopdgdd, rgpd
+from rag_lopd.generacion.cli import app as app_generacion
 from rag_lopd.model import Norma
 from rag_lopd.retrieval.cli import app as app_retrieval
 
@@ -28,6 +29,7 @@ app = typer.Typer(
 
 app.add_typer(app_eval, name="eval")
 app.add_typer(app_retrieval, name="retrieval")
+app.add_typer(app_generacion, name="generacion")
 
 
 @app.command()
@@ -39,6 +41,7 @@ def info() -> None:
     typer.echo(f"  Cellar   : {settings.cellar_base}/{settings.rgpd_celex}")
     typer.echo(f"  Datos    : {settings.data_dir.resolve()}")
     typer.echo(f"  DeepInfra: {'configurada' if settings.deepinfra_api_key else 'sin configurar'}")
+    typer.echo(f"  Google   : {'configurada' if settings.google_api_key else 'sin configurar'}")
 
 
 @app.command()
