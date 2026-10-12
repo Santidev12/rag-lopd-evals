@@ -25,6 +25,7 @@ from pydantic import BaseModel, ConfigDict
 from rag_lopd.eval.modelo import SIN_RESPUESTA, EvalSet, TipoPregunta
 from rag_lopd.generacion.contexto import IndiceArticulos, contextos_para
 from rag_lopd.generacion.modelo import Estado, ModeloDeLenguaje, Respuesta, Uso
+from rag_lopd.generacion.prompt import PROMPT_POR_DEFECTO, Prompt
 from rag_lopd.generacion.responder import responder
 from rag_lopd.model import Identificador
 from rag_lopd.retrieval.modelo import Recuperador
@@ -63,6 +64,7 @@ def evaluar_generacion(
     eval_set: EvalSet,
     *,
     k: int = 10,
+    prompt: Prompt = PROMPT_POR_DEFECTO,
     al_terminar: Callable[[Observacion], None] | None = None,
 ) -> list[Observacion]:
     """Recupera, genera y registra, para las preguntas aceptadas, de una en una.
@@ -79,7 +81,7 @@ def evaluar_generacion(
             tipo=pregunta.tipo,
             fuente=pregunta.fuente,
             contextos=tuple(c.id for c in contextos),
-            respuesta=responder(modelo, pregunta.pregunta, contextos),
+            respuesta=responder(modelo, pregunta.pregunta, contextos, prompt),
         )
         observaciones.append(observacion)
         if al_terminar is not None:

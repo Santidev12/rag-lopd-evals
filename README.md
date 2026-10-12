@@ -27,7 +27,7 @@ La parte difícil no es responder. Es saber cuándo no se puede.
 | Framework | Ninguno | LangChain / LlamaIndex esconden justo lo que hay que medir |
 | Embeddings | BGE-M3 vía DeepInfra | `voyage-law-2`: sin evidencia de soporte en español |
 | Recuperación | Denso (BGE-M3), 88,9 % recall@10 a nivel artículo | BM25 solo: se queda en 48,1 %, no cierra el hueco entre lenguaje corriente y término legal |
-| Generación | — | — |
+| Generación | Gemini 3.5 Flash-Lite (prompt v2), salida JSON con vía `sin_respuesta` y cita validada contra el contexto entregado | Abstenerse por umbral de score: la similitud no separa lo respondible de lo no respondible (AUC 0,83) |
 
 Las decisiones con su evidencia están en [`docs/research/`](docs/research/).
 
@@ -37,9 +37,9 @@ Las decisiones con su evidencia están en [`docs/research/`](docs/research/).
 | --- | --- |
 | Recall@5 / Recall@20 | — |
 | Exactitud de respuesta (preguntas respondibles, IC 95 %) | — |
-| Cita el artículo correcto | — |
-| **Tasa de sobre-respuesta** (responde sin tener la respuesta) | — |
-| **Tasa de abstención indebida** (calla teniendo la respuesta) | — |
+| Cita cubre el artículo fuente | 86,7 % (26/30, IC 95 %: 70 %–95 %) |
+| **Tasa de sobre-respuesta** (responde sin tener la respuesta) | 11,8 % (2/17, IC 95 %: 3 %–34 %) |
+| **Tasa de abstención indebida** (calla teniendo la respuesta) | 9,1 % (3/33, IC 95 %: 3 %–24 %) |
 
 El eval set (50 preguntas con respuesta correcta y fuente esperada) está versionado en
 [`eval/`](eval/). Incluye preguntas sin respuesta en el corpus y preguntas trampa: sin ellas,
@@ -48,8 +48,11 @@ la evaluación no mide el fallo que más importa. Reparto: 15 factual · 12 cruz
 
 Cómo se construyó, y cómo se defiende de que un LLM se invente las respuestas, en
 [`docs/eval-set.md`](docs/eval-set.md). **Estado actual: las 50 preguntas están revisadas y
-aceptadas.** Los números siguen sin ser publicables hasta que exista un harness de recuperación +
-generación que las conteste de verdad.
+aceptadas.** Los números de generación son de una sola pasada (un modelo, prompt v2) y miden comportamiento
+(contestar / callar / citar), no si el contenido es correcto: eso necesita el harness con juez.
+Con el prompt v1 la abstención indebida era del 15,2 % (5/33): las dos de diferencia son preguntas
+temporales, para las que se diseñó v2 (ver el ticket del proyecto), así que no es una mejora que
+se pueda extrapolar.
 
 ```bash
 uv run rag-lopd eval validar   # reglas del eval set + todas las fuentes existen en el corpus
@@ -61,7 +64,7 @@ uv run rag-lopd eval tabla     # exporta docs/eval-candidatas.md para revisar
 
 | | |
 | --- | --- |
-| Coste medio por consulta | — € |
+| Coste medio por consulta | ≈ 0,0020 $ (Gemini 3.5 Flash-Lite, ~5.600 tokens de entrada) |
 | Latencia p50 / p95 | — |
 | Modos de fallo conocidos | — |
 
@@ -115,6 +118,7 @@ observación para recalcular sin volver a pagar:
 ```bash
 uv run rag-lopd generacion preguntar "..."   # recupera, genera y enseña cita y coste
 uv run rag-lopd generacion evaluar           # las 50 preguntas; llama a Gemini (céntimos)
+uv run rag-lopd generacion evaluar --prompt v1   # reproduce la primera pasada
 uv run rag-lopd generacion resumir data/runs/<pasada>.jsonl
 ```
 

@@ -17,7 +17,7 @@ import re
 from pydantic import BaseModel, Field, ValidationError
 
 from rag_lopd.generacion.modelo import Contexto, Estado, ModeloDeLenguaje, Respuesta
-from rag_lopd.generacion.prompt import SISTEMA, construir_usuario
+from rag_lopd.generacion.prompt import PROMPT_POR_DEFECTO, Prompt
 from rag_lopd.model import Identificador
 
 _VALLA_CODIGO = re.compile(r"^\s*```(?:json)?\s*(.*?)\s*```\s*$", re.DOTALL)
@@ -61,8 +61,13 @@ def _validar_citas(
     return tuple(validas), tuple(descartadas)
 
 
-def responder(modelo: ModeloDeLenguaje, pregunta: str, contextos: list[Contexto]) -> Respuesta:
-    completado = modelo.completar(SISTEMA, construir_usuario(pregunta, contextos))
+def responder(
+    modelo: ModeloDeLenguaje,
+    pregunta: str,
+    contextos: list[Contexto],
+    prompt: Prompt = PROMPT_POR_DEFECTO,
+) -> Respuesta:
+    completado = modelo.completar(prompt.sistema, prompt.usuario(pregunta, contextos))
     uso = completado.uso
 
     try:

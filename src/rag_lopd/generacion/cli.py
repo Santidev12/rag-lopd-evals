@@ -21,11 +21,11 @@ from rag_lopd.generacion.contexto import contextos_para, indexar_articulos
 from rag_lopd.generacion.evaluacion import Observacion, Resumen, evaluar_generacion, resumir
 from rag_lopd.generacion.gemini import MODELO_POR_DEFECTO, GeminiModelo, tarifa_de
 from rag_lopd.generacion.modelo import Tarifa
-from rag_lopd.generacion.prompt import VERSION as VERSION_PROMPT
+from rag_lopd.generacion.prompt import PROMPT_POR_DEFECTO, Prompt, prompt_de
 from rag_lopd.generacion.responder import responder
 from rag_lopd.model import UnidadIndexable
 from rag_lopd.retrieval import indice_denso
-from rag_lopd.retrieval.corpus import cargar_unidades
+from rag_lopd.retrieval.corpus import cargar_unidades, cargar_unidades_con_historia
 from rag_lopd.retrieval.denso import RecuperadorDenso
 from rag_lopd.retrieval.embeddings import EmbebedorDeepInfra
 
@@ -34,6 +34,10 @@ app = typer.Typer(help="Generación: responder con cita o abstenerse, y medirlo.
 _EVAL_SET_POR_DEFECTO = Path("eval/candidatas-v0.jsonl")
 
 _MODELO = Annotated[str, typer.Option("--modelo", help="Modelo de Gemini.")]
+_PROMPT = Annotated[
+    str,
+    typer.Option("--prompt", help="Versión del prompt: v1 (base) o v2 (con vigencia)."),
+]
 _K = Annotated[
     int, typer.Option("--k", help="Unidades que se recuperan (se agrupan en artículos).")
 ]
@@ -44,16 +48,32 @@ def _fallar(mensaje: str) -> typer.Exit:
     return typer.Exit(code=1)
 
 
-def _corpus_e_indice(settings: Settings) -> tuple[list[UnidadIndexable], Path]:
-    """El corpus cargado y la ruta del índice denso (sin ruta jerárquica: la variante elegida en
-    el ticket 11), o un error claro si falta alguno de los dos."""
-    unidades = cargar_unidades(settings.processed_dir)
-    if not unidades:
+def _corpus_e_indice(
+    settings: Settings,
+) -> tuple[list[UnidadIndexable], list[UnidadIndexable], Path]:
+    """Las unidades vigentes (lo que se indexa), todas las unidades con su historia (lo que el
+    generador puede enseñar) y la ruta del índice denso (sin ruta jerárquica: la variante elegida
+    en el ticket 11), o un error claro si falta algo."""
+    vigentes = cargar_unidades(settings.processed_dir)
+    if not vigentes:
         raise _fallar(f"No hay unidades en {settings.processed_dir}. Ejecuta 'rag-lopd ingest'.")
+    try:
+        todas = cargar_unidades_con_historia(settings.processed_dir)
+    except FileNotFoundError as error:
+        raise _fallar(
+            f"Falta la norma completa ({error.filename}). Ejecuta 'rag-lopd ingest'."
+        ) from error
     ruta = indice_denso.ruta_indice(settings, con_ruta=False)
     if not ruta.exists():
         raise _fallar(f"No existe {ruta}. Constrúyelo con 'rag-lopd retrieval indexar --sin-ruta'.")
-    return unidades, ruta
+    return vigentes, todas, ruta
+
+
+def _elegir_prompt(version: str) -> Prompt:
+    try:
+        return prompt_de(version)
+    except ValueError as error:
+        raise _fallar(f"Error: {error}") from error
 
 
 @app.command()
@@ -61,11 +81,13 @@ def preguntar(
     pregunta: Annotated[str, typer.Argument(help="La pregunta, en lenguaje natural.")],
     k: _K = 10,
     modelo: _MODELO = MODELO_POR_DEFECTO,
+    prompt: _PROMPT = PROMPT_POR_DEFECTO.version,
 ) -> None:
     """Recupera, genera y enseña la respuesta (o la abstención) con su cita y su coste."""
     settings = get_settings()
-    unidades, ruta = _corpus_e_indice(settings)
-    indice = indexar_articulos(unidades)
+    politica = _elegir_prompt(prompt)
+    unidades, todas, ruta = _corpus_e_indice(settings)
+    indice = indexar_articulos(todas)
 
     try:
         with (
@@ -75,7 +97,7 @@ def preguntar(
             unidades_indice, vectores = indice_denso.cargar(ruta, unidades)
             recuperador = RecuperadorDenso(unidades_indice, vectores, embebedor)
             contextos = contextos_para(recuperador.buscar(pregunta, k=k), indice)
-            respuesta = responder(llm, pregunta, contextos)
+            respuesta = responder(llm, pregunta, contextos, politica)
             tarifa = llm.tarifa
     except (ValueError, httpx.HTTPError) as error:
         raise _fallar(f"Error: {error}") from error
@@ -124,6 +146,7 @@ def evaluar(
     eval_set_path: Annotated[Path, typer.Option("--eval-set")] = _EVAL_SET_POR_DEFECTO,
     k: _K = 10,
     modelo: _MODELO = MODELO_POR_DEFECTO,
+    prompt: _PROMPT = PROMPT_POR_DEFECTO.version,
 ) -> None:
     """Corre las preguntas aceptadas contra recuperación densa + generación y las resume.
 
@@ -131,12 +154,13 @@ def evaluar(
     termina, para poder volver a resumirla con `resumir` sin repetir la llamada.
     """
     settings = get_settings()
-    unidades, ruta = _corpus_e_indice(settings)
+    politica = _elegir_prompt(prompt)
+    unidades, todas, ruta = _corpus_e_indice(settings)
     eval_set = leer_eval_set(eval_set_path)
-    indice = indexar_articulos(unidades)
+    indice = indexar_articulos(todas)
 
     sello = datetime.now().strftime("%Y%m%d-%H%M%S")
-    salida = settings.data_dir / "runs" / f"{modelo}-prompt{VERSION_PROMPT}-k{k}-{sello}.jsonl"
+    salida = settings.data_dir / "runs" / f"{modelo}-prompt{politica.version}-k{k}-{sello}.jsonl"
     salida.parent.mkdir(parents=True, exist_ok=True)
 
     def guardar(observacion: Observacion) -> None:
@@ -145,7 +169,7 @@ def evaluar(
         typer.echo(f"  {observacion.pregunta_id} {observacion.respuesta.estado.value}")
 
     typer.echo(
-        f"{modelo} · prompt {VERSION_PROMPT} · k={k} · {len(eval_set.aceptadas())} preguntas"
+        f"{modelo} · prompt {politica.version} · k={k} · {len(eval_set.aceptadas())} preguntas"
     )
     try:
         with (
@@ -155,7 +179,7 @@ def evaluar(
             unidades_indice, vectores = indice_denso.cargar(ruta, unidades)
             recuperador = RecuperadorDenso(unidades_indice, vectores, embebedor)
             observaciones = evaluar_generacion(
-                llm, recuperador, indice, eval_set, k=k, al_terminar=guardar
+                llm, recuperador, indice, eval_set, k=k, prompt=politica, al_terminar=guardar
             )
             tarifa = llm.tarifa
     except (ValueError, httpx.HTTPError) as error:

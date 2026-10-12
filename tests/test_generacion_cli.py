@@ -77,3 +77,10 @@ def test_preguntar_sin_corpus_dice_que_hay_que_ingerir() -> None:
 
     assert resultado.exit_code == 1
     assert "rag-lopd ingest" in resultado.output
+
+
+def test_un_prompt_desconocido_falla_antes_de_cargar_nada() -> None:
+    resultado = runner.invoke(app, ["preguntar", "¿plazo?", "--prompt", "v9"])
+
+    assert resultado.exit_code == 1
+    assert "no hay prompt 'v9'" in resultado.output

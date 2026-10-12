@@ -7,6 +7,7 @@ y el mismo eval set. Todo lo que no está aquí es un detalle de un modelo concr
 
 from __future__ import annotations
 
+from datetime import date
 from enum import StrEnum
 from typing import Protocol
 
@@ -15,14 +16,31 @@ from pydantic import BaseModel, ConfigDict
 from rag_lopd.model import Identificador
 
 
+class RedaccionAnterior(BaseModel):
+    """Una versión histórica de un artículo: lo que decía entre `desde` y `hasta`."""
+
+    model_config = ConfigDict(frozen=True)
+
+    desde: date | None
+    hasta: date
+    texto: str
+
+
 class Contexto(BaseModel):
-    """Un artículo entero tal y como se le presenta al modelo (unidad de contexto, ADR 0001)."""
+    """Un artículo entero tal y como se le presenta al modelo (unidad de contexto, ADR 0001).
+
+    `texto` es siempre la redacción **vigente**. Si el artículo se ha modificado, sus redacciones
+    anteriores van aparte en `anteriores` (de la más antigua a la más reciente): quien arma el
+    prompt decide si las enseña, nunca se mezclan con el texto vigente.
+    """
 
     model_config = ConfigDict(frozen=True)
 
     id: Identificador
     ruta: str
     texto: str
+    vigente_desde: date | None = None
+    anteriores: tuple[RedaccionAnterior, ...] = ()
 
 
 class Uso(BaseModel):

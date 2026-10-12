@@ -1,16 +1,19 @@
 """De unidades recuperadas a artículos enteros: el salto *small-to-big* del ADR 0001.
 
 El buscador indexa y devuelve apartados; al modelo se le entrega el artículo completo. Aquí se
-reconstruye ese artículo a partir de las unidades vigentes del corpus (la única fuente que tiene
-`rag-lopd`: `Articulo.titulo` no se guarda en el JSONL aplanado, y la `ruta` ya lleva el
-encabezado).
+reconstruye ese artículo a partir de las unidades del corpus (`Articulo.titulo` no se guarda en el
+JSONL aplanado, y la `ruta` ya lleva el encabezado).
+
+Si entre las unidades hay redacciones antiguas (`vigente_hasta` con fecha), se separan de la
+vigente: el texto vigente es el que manda y las antiguas quedan aparte, ordenadas por fecha.
 """
 
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import date
 
-from rag_lopd.generacion.modelo import Contexto
+from rag_lopd.generacion.modelo import Contexto, RedaccionAnterior
 from rag_lopd.model import Identificador, UnidadIndexable
 from rag_lopd.retrieval.modelo import Resultado
 
@@ -25,18 +28,41 @@ def indexar_articulos(unidades: list[UnidadIndexable]) -> IndiceArticulos:
     return dict(indice)
 
 
-def construir_contexto(unidades: list[UnidadIndexable]) -> Contexto:
-    """Un artículo entero a partir de sus unidades. Los apartados se marcan con su número para
-    que el modelo pueda distinguirlos y citar con precisión; una unidad sin apartado (artículo que
-    no se pudo partir) va tal cual."""
-    primera = unidades[0]
-    trozos = [
+def _unir(unidades: list[UnidadIndexable]) -> str:
+    """Los apartados se marcan con su número para que el modelo pueda distinguirlos y citar con
+    precisión; una unidad sin apartado (artículo que no se pudo partir) va tal cual."""
+    return "\n".join(
         f"({u.id.apartado}) {u.texto}" if u.id.apartado is not None else u.texto for u in unidades
-    ]
+    )
+
+
+def construir_contexto(unidades: list[UnidadIndexable]) -> Contexto:
+    """Un artículo entero a partir de sus unidades: la redacción vigente y, si las hay, las
+    anteriores. Un artículo sin ninguna unidad vigente no se puede presentar como contexto."""
+    vigentes = [u for u in unidades if u.vigente]
+    if not vigentes:
+        raise ValueError(
+            f"el artículo {unidades[0].id.unidad_de_contexto} no tiene redacción vigente"
+        )
+
+    versiones: dict[tuple[date | None, date], list[UnidadIndexable]] = defaultdict(list)
+    for unidad in unidades:
+        if unidad.vigente_hasta is not None:
+            versiones[(unidad.vigente_desde, unidad.vigente_hasta)].append(unidad)
+    anteriores = tuple(
+        RedaccionAnterior(desde=desde, hasta=hasta, texto=_unir(grupo))
+        for (desde, hasta), grupo in sorted(
+            versiones.items(), key=lambda par: (par[0][0] or date.min, par[0][1])
+        )
+    )
+
+    primera = vigentes[0]
     return Contexto(
         id=primera.id.unidad_de_contexto,
         ruta=primera.ruta,
-        texto="\n".join(trozos),
+        texto=_unir(vigentes),
+        vigente_desde=max((u.vigente_desde for u in vigentes if u.vigente_desde), default=None),
+        anteriores=anteriores,
     )
 
 

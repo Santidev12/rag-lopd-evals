@@ -6,6 +6,8 @@ El modelo de lenguaje es un doble que devuelve un texto fijo: lo que se prueba e
 
 from __future__ import annotations
 
+from datetime import date
+
 import pytest
 
 from rag_lopd.eval.modelo import EvalSet, Pregunta, TipoPregunta
@@ -17,19 +19,36 @@ from rag_lopd.generacion.evaluacion import (
     intervalo_wilson,
     resumir,
 )
-from rag_lopd.generacion.modelo import Completado, Contexto, Estado, Respuesta, Tarifa, Uso
-from rag_lopd.generacion.prompt import construir_usuario
+from rag_lopd.generacion.modelo import (
+    Completado,
+    Contexto,
+    Estado,
+    RedaccionAnterior,
+    Respuesta,
+    Tarifa,
+    Uso,
+)
+from rag_lopd.generacion.prompt import PROMPT_POR_DEFECTO, PROMPTS, V1, V2, prompt_de
 from rag_lopd.generacion.responder import responder
 from rag_lopd.model import Granularidad, Identificador, UnidadIndexable
 from rag_lopd.retrieval.modelo import Resultado
 
 
-def _unidad(id_texto: str, texto: str, ruta: str = "RGPD · Artículo X") -> UnidadIndexable:
+def _unidad(
+    id_texto: str,
+    texto: str,
+    ruta: str = "RGPD · Artículo X",
+    *,
+    desde: date | None = None,
+    hasta: date | None = None,
+) -> UnidadIndexable:
     return UnidadIndexable(
         id=Identificador.parse(id_texto),
         texto=texto,
         granularidad=Granularidad.APARTADO,
         ruta=ruta,
+        vigente_desde=desde,
+        vigente_hasta=hasta,
     )
 
 
@@ -46,9 +65,11 @@ class _Modelo:
     def __init__(self, texto: str, uso: Uso | None = None) -> None:
         self._texto = texto
         self._uso = uso or Uso(tokens_entrada=10, tokens_salida=5)
+        self.sistemas: list[str] = []
         self.usuarios: list[str] = []
 
     def completar(self, sistema: str, usuario: str) -> Completado:
+        self.sistemas.append(sistema)
         self.usuarios.append(usuario)
         return Completado(texto=self._texto, uso=self._uso)
 
@@ -103,10 +124,119 @@ def test_contextos_para_salta_lo_que_no_esta_en_el_indice() -> None:
 
 
 def test_el_prompt_lleva_los_articulos_con_su_identificador_y_la_pregunta() -> None:
-    usuario = construir_usuario("¿plazo?", CONTEXTOS)
+    usuario = V1.usuario("¿plazo?", CONTEXTOS)
 
     assert "[rgpd:art-33] RGPD · Artículo 33" in usuario
     assert usuario.endswith("PREGUNTA: ¿plazo?")
+
+
+# --- contexto: vigencia y redacciones anteriores -------------------------------------------------
+
+_ANTES = date(2018, 12, 7)
+_CAMBIO = date(2023, 5, 10)
+
+
+def _articulo_modificado() -> list[UnidadIndexable]:
+    """Como el art. 67 de la LOPDGDD: la redacción antigua y la vigente conviven en el corpus, y
+    la antigua puede aparecer antes en el orden de lectura."""
+    return [
+        _unidad("lopdgdd:art-67.1", "antes 1", desde=_ANTES, hasta=_CAMBIO),
+        _unidad("lopdgdd:art-67.2", "doce meses", desde=_ANTES, hasta=_CAMBIO),
+        _unidad("lopdgdd:art-67.1", "ahora 1", desde=_CAMBIO),
+        _unidad("lopdgdd:art-67.2", "dieciocho meses", desde=_CAMBIO),
+    ]
+
+
+def test_el_contexto_separa_la_redaccion_vigente_de_las_anteriores() -> None:
+    contexto = construir_contexto(_articulo_modificado())
+
+    assert contexto.texto == "(1) ahora 1\n(2) dieciocho meses"  # nada de la derogada se cuela
+    assert contexto.vigente_desde == _CAMBIO
+    assert contexto.anteriores == (
+        RedaccionAnterior(desde=_ANTES, hasta=_CAMBIO, texto="(1) antes 1\n(2) doce meses"),
+    )
+
+
+def test_las_redacciones_anteriores_salen_de_la_mas_antigua_a_la_mas_reciente() -> None:
+    unidades = [
+        _unidad("lopdgdd:art-2.1", "v2", desde=date(2020, 1, 1), hasta=date(2021, 1, 1)),
+        _unidad("lopdgdd:art-2.1", "v1", desde=date(2018, 1, 1), hasta=date(2020, 1, 1)),
+        _unidad("lopdgdd:art-2.1", "v3", desde=date(2021, 1, 1)),
+    ]
+
+    contexto = construir_contexto(unidades)
+
+    assert [a.texto for a in contexto.anteriores] == ["(1) v1", "(1) v2"]
+
+
+def test_un_articulo_sin_modificar_no_tiene_redacciones_anteriores() -> None:
+    contexto = construir_contexto([_unidad("rgpd:art-33.1", "uno", desde=date(2016, 5, 4))])
+
+    assert contexto.anteriores == ()
+    assert contexto.vigente_desde == date(2016, 5, 4)
+
+
+def test_un_articulo_sin_redaccion_vigente_no_se_puede_presentar() -> None:
+    derogada = [_unidad("lopdgdd:art-9.1", "x", desde=_ANTES, hasta=_CAMBIO)]
+
+    with pytest.raises(ValueError, match="no tiene redacción vigente"):
+        construir_contexto(derogada)
+
+
+def test_contextos_para_con_historia_entrega_un_solo_articulo() -> None:
+    indice = indexar_articulos(_articulo_modificado())
+
+    contextos = contextos_para([_resultado("lopdgdd:art-67.2")], indice)
+
+    assert len(contextos) == 1
+    assert len(contextos[0].anteriores) == 1
+
+
+def test_v1_no_enseña_la_vigencia_ni_las_redacciones_anteriores() -> None:
+    contexto = construir_contexto(_articulo_modificado())
+
+    usuario = V1.usuario("¿cuánto duran?", [contexto])
+
+    assert "dieciocho meses" in usuario
+    assert "doce meses" not in usuario
+    assert "Redacción" not in usuario
+
+
+def test_v2_enseña_desde_cuando_rige_y_la_redaccion_anterior_con_su_periodo() -> None:
+    contexto = construir_contexto(_articulo_modificado())
+
+    usuario = V2.usuario("¿cuánto duran?", [contexto])
+
+    assert "Redacción vigente desde 2023-05-10:\n(1) ahora 1\n(2) dieciocho meses" in usuario
+    assert (
+        "Redacción anterior, vigente desde 2018-12-07 hasta 2023-05-10:\n"
+        "(1) antes 1\n(2) doce meses"
+    ) in usuario
+    # Lo vigente va antes que lo anterior: es lo que debe pesar por defecto.
+    assert usuario.index("dieciocho meses") < usuario.index("doce meses")
+
+
+def test_v2_sin_fecha_de_vigencia_no_inventa_una() -> None:
+    contexto = Contexto(id=Identificador.parse("rgpd:art-33"), ruta="RGPD", texto="x")
+
+    usuario = V2.usuario("q", [contexto])
+
+    assert "Redacción vigente desde" not in usuario
+    assert "[rgpd:art-33] RGPD\nx" in usuario
+
+
+def test_solo_v2_explica_la_vigencia_en_las_instrucciones() -> None:
+    assert "Redacción anterior" not in V1.sistema
+    assert "Redacción anterior" in V2.sistema
+    # v2 es v1 más una regla: lo demás no se toca, así la diferencia entre pasadas es solo esa.
+    assert V2.sistema.startswith(V1.sistema.split("\nDevuelve únicamente")[0])
+
+
+def test_prompt_de_resuelve_las_versiones_y_rechaza_las_desconocidas() -> None:
+    assert prompt_de("v1") is V1
+    assert set(PROMPTS) == {"v1", "v2"}
+    with pytest.raises(ValueError, match="no hay prompt 'v9'"):
+        prompt_de("v9")
 
 
 # --- responder: la política --------------------------------------------------------------------
@@ -191,6 +321,17 @@ def test_lo_que_no_es_el_json_pedido_es_salida_invalida_no_abstencion_ni_respues
 
     assert respuesta.estado is Estado.SALIDA_INVALIDA
     assert respuesta.se_abstiene
+
+
+def test_responder_usa_el_prompt_que_se_le_pide() -> None:
+    modelo = _Modelo('{"sin_respuesta": true, "respuesta": "", "citas": []}')
+
+    responder(modelo, "q", CONTEXTOS, V1)
+    responder(modelo, "q", CONTEXTOS, V2)
+    responder(modelo, "q", CONTEXTOS)
+
+    assert modelo.sistemas == [V1.sistema, V2.sistema, PROMPT_POR_DEFECTO.sistema]
+    assert PROMPT_POR_DEFECTO is V2
 
 
 def test_acepta_el_json_envuelto_en_una_valla_de_codigo() -> None:
@@ -361,6 +502,7 @@ def test_evaluar_generacion_recorre_las_aceptadas_y_avisa_de_cada_una() -> None:
         _RecuperadorFijo([_resultado("rgpd:art-33.1")]),
         indexar_articulos(corpus),
         eval_set,
+        prompt=V2,
         al_terminar=lambda o: avisos.append(o.pregunta_id),
     )
 
@@ -369,3 +511,4 @@ def test_evaluar_generacion_recorre_las_aceptadas_y_avisa_de_cada_una() -> None:
     # El modelo de mentira responde a todo: acierta la factual y sobre-responde la fuera de corpus.
     assert resumir(observaciones).sobre_respuesta == Proporcion(casos=1, exitos=1)
     assert len(modelo.usuarios) == 2
+    assert set(modelo.sistemas) == {V2.sistema}
