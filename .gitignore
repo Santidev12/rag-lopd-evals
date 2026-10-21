@@ -21,8 +21,8 @@ htmlcov/
 # (Si al final decidimos publicar el corpus normalizado, se saca data/processed/ de aquí.)
 data/
 
-# Notas de trabajo y mapa de wayfinder: útiles en local, ruido en el repo público.
-.scratch/
+# .scratch/ (mapa de wayfinder y tickets) SÍ se versiona: es el registro de las decisiones
+# y de por qué se descartó cada alternativa.
 
 # Sistema
 .DS_Store
