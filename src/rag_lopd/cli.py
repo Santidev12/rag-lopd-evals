@@ -6,17 +6,28 @@ que teclear para reproducir los números.
 
 from __future__ import annotations
 
+import json
+from datetime import date
+from pathlib import Path
+from typing import Annotated
+
 import typer
 
 from rag_lopd import __version__
 from rag_lopd.almacen import guardar
 from rag_lopd.config import Settings, get_settings
 from rag_lopd.descarga import Descargador
+from rag_lopd.eval.almacen import leer as leer_eval_set
 from rag_lopd.eval.cli import app as app_eval
 from rag_lopd.fuentes import lopdgdd, rgpd
 from rag_lopd.generacion.cli import app as app_generacion
+from rag_lopd.generacion.cli import leer_observaciones
+from rag_lopd.generacion.gemini import MODELO_POR_DEFECTO, tarifa_de
+from rag_lopd.generacion.juez import leer_juicios
+from rag_lopd.informe import construir_informe
 from rag_lopd.model import Norma
 from rag_lopd.retrieval.cli import app as app_retrieval
+from rag_lopd.retrieval.evaluacion import RecallMedido
 
 FUENTES = ("rgpd", "lopdgdd")
 
@@ -101,3 +112,52 @@ def _informar(norma: Norma, settings: Settings) -> None:
 
 if __name__ == "__main__":  # pragma: no cover
     app()
+
+
+@app.command()
+def informe(
+    pasada: Annotated[Path, typer.Argument(help="Un fichero de data/runs/ (pasada de evaluar).")],
+    juicios: Annotated[
+        Path | None, typer.Option("--juicios", help="Los juicios de `generacion juzgar`.")
+    ] = None,
+    recall: Annotated[
+        Path | None, typer.Option("--recall", help="El JSON de `retrieval evaluar --guardar`.")
+    ] = None,
+    eval_set_path: Annotated[Path, typer.Option("--eval-set")] = Path("eval/candidatas-v0.jsonl"),
+    modelo: Annotated[str, typer.Option("--modelo", help="Modelo de Gemini de la pasada.")] = (
+        MODELO_POR_DEFECTO
+    ),
+    salida: Annotated[Path, typer.Option("--salida")] = Path("docs/informe.html"),
+) -> None:
+    """Genera el informe de evaluación estático (un HTML) desde ficheros ya guardados.
+
+    No llama a ningún modelo ni cuesta dinero. Cuenta contra el eval set actual, no contra el de
+    cuando se hizo la pasada.
+    """
+    try:
+        tarifa = tarifa_de(modelo)
+    except ValueError as error:
+        typer.secho(f"Error: {error}", fg=typer.colors.RED)
+        raise typer.Exit(code=1) from error
+    eval_set = leer_eval_set(eval_set_path)
+    observaciones = leer_observaciones(pasada, eval_set)
+    veredictos = leer_juicios(juicios.read_text(encoding="utf-8")) if juicios else None
+    medidos = (
+        [RecallMedido.model_validate(x) for x in json.loads(recall.read_text(encoding="utf-8"))]
+        if recall
+        else None
+    )
+    html = construir_informe(
+        observaciones,
+        eval_set,
+        modelo=modelo,
+        tarifa=tarifa,
+        nombre_pasada=pasada.name,
+        fecha=date.today(),
+        juicios=veredictos,
+        nombre_juicios=juicios.name if juicios else None,
+        recall=medidos,
+    )
+    salida.parent.mkdir(parents=True, exist_ok=True)
+    salida.write_text(html, encoding="utf-8")
+    typer.echo(f"Informe con {len(observaciones)} preguntas -> {salida}")

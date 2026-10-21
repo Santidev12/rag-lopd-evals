@@ -535,8 +535,9 @@ def test_evaluar_generacion_mide_la_latencia_de_cada_consulta() -> None:
             ),
         ),
     )
-    # Dos lecturas del reloj por pregunta: la primera tarda 1,5 s y la segunda 3 s.
-    lecturas = iter([10.0, 11.5, 20.0, 23.0])
+    # Tres lecturas del reloj por pregunta (inicio, tras recuperar, fin): la primera consulta tarda
+    # 1,5 s (0,5 recuperando y 1 generando) y la segunda 3 s (1 y 2).
+    lecturas = iter([10.0, 10.5, 11.5, 20.0, 21.0, 23.0])
 
     observaciones = evaluar_generacion(
         _Modelo('{"sin_respuesta": true}'),
@@ -547,16 +548,25 @@ def test_evaluar_generacion_mide_la_latencia_de_cada_consulta() -> None:
     )
 
     assert [o.latencia_s for o in observaciones] == [1.5, 3.0]
-    latencia = resumir(observaciones).latencia
-    assert latencia is not None
-    assert (latencia.consultas, latencia.p50_s) == (2, 2.25)
+    assert [o.latencia_recuperacion_s for o in observaciones] == [0.5, 1.0]
+    assert [o.latencia_generacion_s for o in observaciones] == [1.0, 2.0]
+    resumen = resumir(observaciones)
+    assert resumen.latencia is not None
+    assert (resumen.latencia.consultas, resumen.latencia.p50_s) == (2, 2.25)
+    assert resumen.latencia_recuperacion is not None
+    assert resumen.latencia_recuperacion.p50_s == 0.75
+    assert resumen.latencia_generacion is not None
+    assert resumen.latencia_generacion.p50_s == 1.5
 
 
 def test_una_pasada_guardada_sin_latencia_se_resume_sin_inventarla() -> None:
     sin_medir = _obs("f-1", TipoPregunta.FACTUAL, Estado.RESPONDE)
 
     assert sin_medir.latencia_s is None
-    assert resumir([sin_medir]).latencia is None
+    resumen = resumir([sin_medir])
+    assert resumen.latencia is None
+    assert resumen.latencia_recuperacion is None
+    assert resumen.latencia_generacion is None
 
 
 def test_percentil_interpola_y_rechaza_lo_vacio() -> None:

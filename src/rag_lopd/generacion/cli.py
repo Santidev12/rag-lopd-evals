@@ -162,6 +162,9 @@ def _imprimir_resumen(resumen: Resumen, tarifa: Tarifa) -> None:
         typer.echo("Latencia: sin medir (pasada guardada antes de instrumentarla).")
     else:
         typer.echo(f"Latencia de extremo a extremo: {resumen.latencia}")
+        if resumen.latencia_recuperacion and resumen.latencia_generacion:
+            typer.echo(f"  recuperar (embeber + buscar): {resumen.latencia_recuperacion}")
+            typer.echo(f"  generar (modelo, con reintentos): {resumen.latencia_generacion}")
 
 
 @app.command()
@@ -235,7 +238,7 @@ def resumir_fichero(
             "la pasada.",
             fg=typer.colors.YELLOW,
         )
-    observaciones = _leer_observaciones(fichero, eval_set)
+    observaciones = leer_observaciones(fichero, eval_set)
     typer.echo(f"{fichero.name}: {len(observaciones)} observaciones")
     _imprimir_resumen(resumir(observaciones), tarifa)
 
@@ -247,7 +250,7 @@ _MODELO_JUEZ = Annotated[
 ]
 
 
-def _leer_observaciones(fichero: Path, eval_set: EvalSet | None = None) -> list[Observacion]:
+def leer_observaciones(fichero: Path, eval_set: EvalSet | None = None) -> list[Observacion]:
     """Lee una pasada; con eval set, realinea tipo y fuente y dice qué preguntas cambiaron."""
     lineas = [x for x in fichero.read_text(encoding="utf-8").splitlines() if x.strip()]
     guardadas = [Observacion.model_validate_json(x) for x in lineas]
@@ -310,7 +313,7 @@ def juzgar(
     """
     settings = get_settings()
     eval_set = leer_eval_set(eval_set_path)
-    observaciones = _leer_observaciones(fichero, eval_set)
+    observaciones = leer_observaciones(fichero, eval_set)
     unidades = cargar_unidades(settings.processed_dir)
     if not unidades:
         raise _fallar(f"No hay unidades en {settings.processed_dir}. Ejecuta 'rag-lopd ingest'.")

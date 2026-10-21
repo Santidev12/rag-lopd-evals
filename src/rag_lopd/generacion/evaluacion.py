@@ -53,6 +53,14 @@ class Observacion(BaseModel):
     """Segundos de la consulta de extremo a extremo (recuperar + generar). `None` en las pasadas
     guardadas antes de que se midiera."""
 
+    latencia_recuperacion_s: float | None = None
+    """Parte de `latencia_s` que se va en recuperar: embeber la consulta por la API, buscar y
+    armar los artículos. `None` si la pasada es anterior al desglose."""
+
+    latencia_generacion_s: float | None = None
+    """Parte de `latencia_s` que se va en el modelo generador, con sus reintentos. `None` si la
+    pasada es anterior al desglose."""
+
     @property
     def debe_abstenerse(self) -> bool:
         return self.tipo in SIN_RESPUESTA
@@ -105,14 +113,18 @@ def evaluar_generacion(
     for pregunta in eval_set.aceptadas():
         inicio = reloj()
         contextos = contextos_para(recuperador.buscar(pregunta.pregunta, k=k), indice)
+        tras_recuperar = reloj()
         respuesta = responder(modelo, pregunta.pregunta, contextos, prompt)
+        fin = reloj()
         observacion = Observacion(
             pregunta_id=pregunta.id,
             tipo=pregunta.tipo,
             fuente=pregunta.fuente,
             contextos=tuple(c.id for c in contextos),
             respuesta=respuesta,
-            latencia_s=reloj() - inicio,
+            latencia_s=fin - inicio,
+            latencia_recuperacion_s=tras_recuperar - inicio,
+            latencia_generacion_s=fin - tras_recuperar,
         )
         observaciones.append(observacion)
         if al_terminar is not None:
@@ -202,6 +214,10 @@ class Resumen:
     latencia: Latencia | None = None
     """De extremo a extremo, solo con las observaciones que la midieron. `None` si ninguna."""
 
+    latencia_recuperacion: Latencia | None = None
+    latencia_generacion: Latencia | None = None
+    """El desglose de `latencia`, solo con las observaciones que lo midieron."""
+
 
 def resumir(observaciones: list[Observacion]) -> Resumen:
     sin_respuesta = [o for o in observaciones if o.debe_abstenerse]
@@ -218,12 +234,12 @@ def resumir(observaciones: list[Observacion]) -> Resumen:
     for o in observaciones:
         uso = uso + o.respuesta.uso
 
-    tiempos = [o.latencia_s for o in observaciones if o.latencia_s is not None]
-    latencia = (
-        Latencia(consultas=len(tiempos), p50_s=percentil(tiempos, 50), p95_s=percentil(tiempos, 95))
-        if tiempos
-        else None
-    )
+    def latencia_de(tiempos: list[float]) -> Latencia | None:
+        if not tiempos:
+            return None
+        return Latencia(
+            consultas=len(tiempos), p50_s=percentil(tiempos, 50), p95_s=percentil(tiempos, 95)
+        )
 
     return Resumen(
         sobre_respuesta=Proporcion(
@@ -251,5 +267,15 @@ def resumir(observaciones: list[Observacion]) -> Resumen:
             1 for o in observaciones if o.respuesta.estado is Estado.SALIDA_INVALIDA
         ),
         uso=uso,
-        latencia=latencia,
+        latencia=latencia_de([o.latencia_s for o in observaciones if o.latencia_s is not None]),
+        latencia_recuperacion=latencia_de(
+            [
+                o.latencia_recuperacion_s
+                for o in observaciones
+                if o.latencia_recuperacion_s is not None
+            ]
+        ),
+        latencia_generacion=latencia_de(
+            [o.latencia_generacion_s for o in observaciones if o.latencia_generacion_s is not None]
+        ),
     )

@@ -123,7 +123,7 @@ artículo correcto en el top-10 (e-021, e-024, e-026), y dos de ellas siguen fue
 ```bash
 uv run rag-lopd retrieval indexar               # construye el índice denso (una vez, de pago)
 uv run rag-lopd retrieval evaluar --motor bm25   # o --motor denso
-uv run rag-lopd retrieval evaluar --motor denso --k 5 --k 10 --k 20   # recall@5/@10/@20 de una vez
+uv run rag-lopd retrieval evaluar --motor denso --k 5 --k 10 --k 20 --guardar data/recall.json   # recall@5/@10/@20 de una vez
 uv run rag-lopd retrieval buscar "..." --motor denso
 ```
 
@@ -140,6 +140,7 @@ uv run rag-lopd generacion preguntar "..."   # recupera, genera y enseña cita y
 uv run rag-lopd generacion evaluar           # las 50 preguntas; llama a Gemini (céntimos); mide la latencia p50/p95
 uv run rag-lopd generacion evaluar --prompt v1   # reproduce la primera pasada
 uv run rag-lopd generacion juzgar data/runs/<pasada>.jsonl   # juez (DeepSeek en DeepInfra): ¿es correcto el contenido?
+uv run rag-lopd informe data/runs/<pasada>.jsonl --juicios data/runs/<pasada>.juez-<...>.jsonl --recall data/recall.json   # el demo: un HTML estático en docs/informe.html
 uv run rag-lopd generacion calibrar <juicios>.jsonl eval/etiquetas-v2-preliminares.jsonl eval/etiquetas-v2-santiago.jsonl
 uv run rag-lopd generacion resumir data/runs/<pasada>.jsonl
 ```

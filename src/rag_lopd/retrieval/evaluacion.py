@@ -24,6 +24,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
+from pydantic import BaseModel, ConfigDict
+
 from rag_lopd.eval.modelo import EvalSet, Pregunta, TipoPregunta
 from rag_lopd.model import Identificador
 from rag_lopd.retrieval.modelo import Recuperador, Resultado
@@ -45,6 +47,33 @@ class ResultadoEvaluacion:
     @property
     def recall(self) -> float:
         return self.aciertos / self.total if self.total else 0.0
+
+
+class RecallMedido(BaseModel):
+    """Un recall ya medido, con el motor y la variante que lo produjeron, para guardarlo en disco
+    y que el informe lo cuente sin volver a llamar a ninguna API."""
+
+    model_config = ConfigDict(frozen=True)
+
+    motor: str
+    con_ruta: bool
+    nivel: Nivel
+    k: int
+    total: int
+    aciertos: int
+    fallos: tuple[str, ...]
+
+    @classmethod
+    def de(cls, motor: str, con_ruta: bool, resultado: ResultadoEvaluacion) -> RecallMedido:
+        return cls(
+            motor=motor,
+            con_ruta=con_ruta,
+            nivel=resultado.nivel,
+            k=resultado.k,
+            total=resultado.total,
+            aciertos=resultado.aciertos,
+            fallos=resultado.fallos,
+        )
 
 
 def preguntas_evaluables(eval_set: EvalSet) -> list[Pregunta]:
