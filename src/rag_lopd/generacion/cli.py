@@ -158,6 +158,10 @@ def _imprimir_resumen(resumen: Resumen, tarifa: Tarifa) -> None:
         f"Tokens: {resumen.uso.tokens_entrada} entrada, {resumen.uso.tokens_salida} salida "
         f"· {tarifa.coste_usd(resumen.uso):.4f} USD en total"
     )
+    if resumen.latencia is None:
+        typer.echo("Latencia: sin medir (pasada guardada antes de instrumentarla).")
+    else:
+        typer.echo(f"Latencia de extremo a extremo: {resumen.latencia}")
 
 
 @app.command()

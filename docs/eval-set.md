@@ -23,7 +23,7 @@ ayuda a inventarlas. Salen de conocer el dominio y la frontera que se fijó en e
 ## El reparto, y por qué ese
 
 El objetivo de diseño era 15 factuales y 7 trampas. Quedó en 16 y 6 al corregir e-047 (ver
-«Correcciones», más abajo); `rag-lopd eval stats` sigue mostrando esa desviación a propósito.
+«Correcciones», más abajo), y el objetivo del código se actualizó a ese reparto.
 
 | Tipo | Nº | Razón |
 | --- | --- | --- |

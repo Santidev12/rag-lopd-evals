@@ -65,23 +65,24 @@ def indexar(
     typer.echo(f"-> {ruta_salida} ({vectores.shape[0]} vectores de dimensión {vectores.shape[1]})")
 
 
-def _evaluar_bm25(unidades: list[UnidadIndexable], eval_set: EvalSet, k: int) -> None:
+def _evaluar_bm25(unidades: list[UnidadIndexable], eval_set: EvalSet, ks: list[int]) -> None:
     for con_ruta in (True, False):
         recuperador = RecuperadorBM25(unidades, con_ruta=con_ruta)
         etiqueta = "con ruta jerárquica" if con_ruta else "sin ruta jerárquica"
         for nivel in _NIVELES:
-            resultado = evaluar_recall(recuperador, eval_set, k=k, nivel=nivel)
-            typer.echo(
-                f"BM25 ({etiqueta}, nivel {nivel}) @k={k}: "
-                f"{resultado.aciertos}/{resultado.total} = {resultado.recall:.1%}"
-            )
-            if resultado.fallos:
-                typer.echo(f"  falladas: {', '.join(resultado.fallos)}")
+            for k in ks:
+                resultado = evaluar_recall(recuperador, eval_set, k=k, nivel=nivel)
+                typer.echo(
+                    f"BM25 ({etiqueta}, nivel {nivel}) @k={k}: "
+                    f"{resultado.aciertos}/{resultado.total} = {resultado.recall:.1%}"
+                )
+                if resultado.fallos:
+                    typer.echo(f"  falladas: {', '.join(resultado.fallos)}")
         typer.echo("")
 
 
 def _evaluar_denso(
-    settings: Settings, unidades: list[UnidadIndexable], eval_set: EvalSet, k: int
+    settings: Settings, unidades: list[UnidadIndexable], eval_set: EvalSet, ks: list[int]
 ) -> None:
     with EmbebedorDeepInfra(settings) as embebedor:
         for con_ruta in (True, False):
@@ -99,23 +100,28 @@ def _evaluar_denso(
             recuperador = RecuperadorDenso(unidades_indice, vectores, embebedor)
             etiqueta = "con ruta jerárquica" if con_ruta else "sin ruta jerárquica"
             for nivel in _NIVELES:
-                resultado = evaluar_recall(recuperador, eval_set, k=k, nivel=nivel)
-                typer.echo(
-                    f"Denso ({etiqueta}, nivel {nivel}) @k={k}: "
-                    f"{resultado.aciertos}/{resultado.total} = {resultado.recall:.1%}"
-                )
-                if resultado.fallos:
-                    typer.echo(f"  falladas: {', '.join(resultado.fallos)}")
+                for k in ks:
+                    resultado = evaluar_recall(recuperador, eval_set, k=k, nivel=nivel)
+                    typer.echo(
+                        f"Denso ({etiqueta}, nivel {nivel}) @k={k}: "
+                        f"{resultado.aciertos}/{resultado.total} = {resultado.recall:.1%}"
+                    )
+                    if resultado.fallos:
+                        typer.echo(f"  falladas: {', '.join(resultado.fallos)}")
             typer.echo("")
 
 
 @app.command()
 def evaluar(
     eval_set_path: Annotated[Path, typer.Option("--eval-set")] = _EVAL_SET_POR_DEFECTO,
-    k: Annotated[int, typer.Option("--k", help="Cuántos resultados cuentan como top-k.")] = 10,
+    k: Annotated[
+        list[int] | None,
+        typer.Option("--k", help="Cuántos resultados cuentan como top-k. Repetible: --k 5 --k 20."),
+    ] = None,
     motor: Annotated[str, typer.Option("--motor", help="bm25 o denso.")] = "bm25",
 ) -> None:
     """Recall@k sobre las preguntas factual y cruzada, a nivel apartado y a nivel artículo."""
+    ks = k or [10]
     if motor not in _MOTORES:
         typer.secho(
             f"motor desconocido: {motor!r}. Usa {' o '.join(_MOTORES)}.", fg=typer.colors.RED
@@ -131,9 +137,9 @@ def evaluar(
     typer.echo("")
 
     if motor == "bm25":
-        _evaluar_bm25(unidades, eval_set, k)
+        _evaluar_bm25(unidades, eval_set, ks)
     else:
-        _evaluar_denso(settings, unidades, eval_set, k)
+        _evaluar_denso(settings, unidades, eval_set, ks)
 
 
 @app.command()
