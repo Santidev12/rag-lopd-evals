@@ -111,7 +111,7 @@ y los ADR, `/codebase-design` al fijar los límites de los módulos.
   Quedan 3 abstenciones: 2 correctas por retrieval (e-021, e-024) y 1 fallo real de generación
   (e-027). Abierto: un segundo modelo.
 - **Instrumentación de coste y latencia.** El coste ya sale de la ejecución: ≈ 0,0020 $ por
-  consulta con Gemini 3.5 Flash-Lite y prompt v2 (tokens reales × tarifa). Falta la latencia p50/p95.
+  consulta con Gemini 3.5 Flash-Lite y prompt v2 (tokens reales × tarifa). Latencia de extremo a extremo medida el 21-oct-2026: p50 21,2 s · p95 41,8 s (50 consultas, una pasada). Es alta y sin desglosar: falta saber cuánto es embeber, buscar y generar.
 - **Forma del demo.** Qué ve un reclutador en los primeros diez segundos. Chat, informe de evaluación,
   o las dos cosas.
 - **Despliegue.** HF Spaces + Qdrant es la apuesta, pero falta confirmar el flujo de indexación y los
