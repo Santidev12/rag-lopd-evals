@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?><response><data><bloque id="ti" tipo="encabezado" titulo="TÍTULO I">
+        <version id_norma="BOE-A-2018-16673" fecha_publicacion="20181206" fecha_vigencia="20181207">
+          <p class="titulo_num">TÍTULO I</p>
+          <p class="titulo_tit">Disposiciones generales</p>
+        </version>
+      </bloque>
+      <bloque id="a2" tipo="precepto" titulo="Artículo 2">
+        <version id_norma="BOE-A-2018-16673" fecha_publicacion="20181206" fecha_vigencia="20181207">
+          <p class="articulo">Artículo 2. Ámbito de aplicación de los Títulos I a IX y de los artículos 89 a 94.</p>
+          <p class="parrafo">1. Lo dispuesto en los Títulos I a IX y en los artículos 89 a 94 de la presente ley orgánica se aplica a cualquier tratamiento total o parcialmente automatizado de datos personales, así como al tratamiento no automatizado de datos personales contenidos o destinados a ser incluidos en un fichero.</p>
+          <p class="parrafo">2. Esta ley orgánica no será de aplicación:</p>
+          <p class="parrafo_2">a) A los tratamientos excluidos del ámbito de aplicación del Reglamento general de protección de datos por su artículo 2.2, sin perjuicio de lo dispuesto en los apartados 3 y 4 de este artículo.</p>
+          <p class="parrafo">b) A los tratamientos de datos de personas fallecidas, sin perjuicio de lo establecido en el artículo 3.</p>
+          <p class="parrafo">c) A los tratamientos sometidos a la normativa sobre protección de materias clasificadas.</p>
+          <p class="parrafo_2">3. Los tratamientos a los que no sea directamente aplicable el Reglamento (UE) 2016/679 por afectar a actividades no comprendidas en el ámbito de aplicación del Derecho de la Unión Europea, se regirán por lo dispuesto en su legislación específica si la hubiere y supletoriamente por lo establecido en el citado reglamento y en la presente ley orgánica. Se encuentran en esta situación, entre otros, los tratamientos realizados al amparo de la legislación orgánica del régimen electoral general, los tratamientos realizados en el ámbito de instituciones penitenciarias y los tratamientos derivados del Registro Civil, los Registros de la Propiedad y Mercantiles.</p>
+          <p class="parrafo">4. El tratamiento de datos llevado a cabo con ocasión de la tramitación por los órganos judiciales de los procesos de los que sean competentes, así como el realizado dentro de la gestión de la Oficina Judicial, se regirán por lo dispuesto en el Reglamento (UE) 2016/679 y la presente ley orgánica, sin perjuicio de las disposiciones de la Ley Orgánica 6/1985, de 1 julio, del Poder Judicial, que le sean aplicables.</p>
+        </version>
+        <version id_norma="BOE-A-2021-8806" fecha_publicacion="20210527" fecha_vigencia="20210616">
+          <p class="articulo">Artículo 2. Ámbito de aplicación de los Títulos I a IX y de los artículos 89 a 94.</p>
+          <p class="parrafo">1. Lo dispuesto en los Títulos I a IX y en los artículos 89 a 94 de la presente ley orgánica se aplica a cualquier tratamiento total o parcialmente automatizado de datos personales, así como al tratamiento no automatizado de datos personales contenidos o destinados a ser incluidos en un fichero.</p>
+          <p class="parrafo">2. Esta ley orgánica no será de aplicación:</p>
+          <p class="parrafo_2">a) A los tratamientos excluidos del ámbito de aplicación del Reglamento general de protección de datos por su artículo 2.2, sin perjuicio de lo dispuesto en los apartados 3 y 4 de este artículo.</p>
+          <p class="parrafo">b) A los tratamientos de datos de personas fallecidas, sin perjuicio de lo establecido en el artículo 3.</p>
+          <p class="parrafo">c) A los tratamientos sometidos a la normativa sobre protección de materias clasificadas.</p>
+          <p class="parrafo_2">3. Los tratamientos a los que no sea directamente aplicable el Reglamento (UE) 2016/679 por afectar a actividades no comprendidas en el ámbito de aplicación del Derecho de la Unión Europea, se regirán por lo dispuesto en su legislación específica si la hubiere y supletoriamente por lo establecido en el citado reglamento y en la presente ley orgánica. Se encuentran en esta situación, entre otros, los tratamientos realizados al amparo de la legislación orgánica del régimen electoral general, los tratamientos realizados en el ámbito de instituciones penitenciarias y los tratamientos derivados del Registro Civil, los Registros de la Propiedad y Mercantiles.</p>
+          <p class="parrafo">4. El tratamiento de datos llevado a cabo con ocasión de la tramitación por los órganos judiciales de los procesos de los que sean competentes, así como el realizado dentro de la gestión de la Oficina Judicial, se regirán por lo dispuesto en el Reglamento (UE) 2016/679 y la presente ley orgánica, sin perjuicio de las disposiciones de la Ley Orgánica 6/1985, de 1 julio, del Poder Judicial, que le sean aplicables.</p>
+          <p class="parrafo">5. El tratamiento de datos llevado a cabo con ocasión de la tramitación por el Ministerio Fiscal de los procesos de los que sea competente, así como el realizado con esos fines dentro de la gestión de la Oficina Fiscal, se regirán por lo dispuesto en el Reglamento (UE) 2016/679 y la presente Ley Orgánica, sin perjuicio de las disposiciones de la Ley 50/1981, de 30 de diciembre, reguladora del Estatuto Orgánico del Ministerio Fiscal, la Ley Orgánica 6/1985, de 1 de julio, del Poder Judicial y de las normas procesales que le sean aplicables.</p>
+          <blockquote>
+            <p class="nota_pie">Se añade el apartado 5 por la disposición final 4.1 de la Ley Orgánica 7/2021, de 26 de mayo. <a class="refPost">Ref. BOE-A-2021-8806#df-4</a></p>
+          </blockquote>
+        </version>
+      </bloque>
+      <bloque id="ti-2" tipo="encabezado" titulo="TÍTULO II">
+        <version id_norma="BOE-A-2018-16673" fecha_publicacion="20181206" fecha_vigencia="20181207">
+          <p class="titulo_num">TÍTULO II</p>
+          <p class="titulo_tit">Principios de protección de datos</p>
+        </version>
+      </bloque>
+      <bloque id="a7" tipo="precepto" titulo="Artículo 7">
+        <version id_norma="BOE-A-2018-16673" fecha_publicacion="20181206" fecha_vigencia="20181207">
+          <p class="articulo">Artículo 7. Consentimiento de los menores de edad.</p>
+          <p class="parrafo">1. El tratamiento de los datos personales de un menor de edad únicamente podrá fundarse en su consentimiento cuando sea mayor de catorce años.</p>
+          <p class="parrafo">Se exceptúan los supuestos en que la ley exija la asistencia de los titulares de la patria potestad o tutela para la celebración del acto o negocio jurídico en cuyo contexto se recaba el consentimiento para el tratamiento.</p>
+          <p class="parrafo">2. El tratamiento de los datos de los menores de catorce años, fundado en el consentimiento, solo será lícito si consta el del titular de la patria potestad o tutela, con el alcance que determinen los titulares de la patria potestad o tutela.</p>
+        </version>
+      </bloque>
+      <bloque id="a1-2" tipo="precepto" titulo="Artículo 10">
+        <version id_norma="BOE-A-2018-16673" fecha_publicacion="20181206" fecha_vigencia="20181207">
+          <p class="articulo">Artículo 10. Tratamiento de datos de naturaleza penal.</p>
+          <p class="parrafo">1. El tratamiento de datos personales relativos a condenas e infracciones penales, así como a procedimientos y medidas cautelares y de seguridad conexas, para fines distintos de los de prevención, investigación, detección o enjuiciamiento de infracciones penales o de ejecución de sanciones penales, solo podrá llevarse a cabo cuando se encuentre amparado en una norma de Derecho de la Unión, en esta ley orgánica o en otras normas de rango legal.</p>
+          <p class="parrafo">2. El registro completo de los datos referidos a condenas e infracciones penales, así como a procedimientos y medidas cautelares y de seguridad conexas a que se refiere el artículo 10 del Reglamento (UE) 2016/679, podrá realizarse conforme con lo establecido en la regulación del Sistema de registros administrativos de apoyo a la Administración de Justicia.</p>
+          <p class="parrafo">3. Fuera de los supuestos señalados en los apartados anteriores, los tratamientos de datos referidos a condenas e infracciones penales, así como a procedimientos y medidas cautelares y de seguridad conexas solo serán posibles cuando sean llevados a cabo por abogados y procuradores y tengan por objeto recoger la información facilitada por sus clientes para el ejercicio de sus funciones.</p>
+        </version>
+      </bloque>
+      <bloque id="tv-3" tipo="encabezado" titulo="TÍTULO VII">
+        <version id_norma="BOE-A-2018-16673" fecha_publicacion="20181206" fecha_vigencia="20181207">
+          <p class="titulo_num">TÍTULO VII</p>
+          <p class="titulo_tit">Autoridades de protección de datos</p>
+        </version>
+      </bloque>
+      <bloque id="ci-7" tipo="encabezado" titulo="CAPÍTULO I">
+        <version id_norma="BOE-A-2018-16673" fecha_publicacion="20181206" fecha_vigencia="20181207">
+          <p class="capitulo_num">CAPÍTULO I</p>
+          <p class="capitulo_tit">La Agencia Española de Protección de Datos</p>
+        </version>
+      </bloque>
+      <bloque id="s2" tipo="encabezado" titulo="Sección 2">
+        <version id_norma="BOE-A-2018-16673" fecha_publicacion="20181206" fecha_vigencia="20181207">
+          <p class="seccion">Sección 2.ª Potestades de investigación y planes de auditoría preventiva</p>
+        </version>
+      </bloque>
+      <bloque id="a5-12" tipo="precepto" titulo="Artículo 53 bis">
+        <version id_norma="BOE-A-2023-11022" fecha_publicacion="20230509" fecha_vigencia="20230510">
+          <p class="articulo">Artículo 53 bis. Actuaciones de investigación a través de sistemas digitales.</p>
+          <p class="parrafo">Las actuaciones de investigación podrán realizarse a través de sistemas digitales que, mediante la videoconferencia u otro sistema similar, permitan la comunicación bidireccional y simultánea de imagen y sonido, la interacción visual, auditiva y verbal entre la Agencia Española de Protección de Datos y el inspeccionado. Además, deben garantizar la transmisión y recepción seguras de los documentos e información que se intercambien, y, en su caso, recoger las evidencias necesarias y el resultado de las actuaciones realizadas asegurando su autoría, autenticidad e integridad.</p>
+          <p class="parrafo">La utilización de estos sistemas se producirá cuando lo determine la Agencia y requerirá la conformidad del inspeccionado en relación con su uso y con la fecha y hora de su desarrollo.</p>
+          <blockquote>
+            <p class="nota_pie">Se añade por la disposición final 9.3 de la Ley 11/2023, de 8 de mayo. <a class="refPost">Ref. BOE-A-2023-11022#df-9</a></p>
+          </blockquote>
+        </version>
+      </bloque>
+      <bloque id="tx" tipo="encabezado" titulo="TÍTULO X">
+        <version id_norma="BOE-A-2018-16673" fecha_publicacion="20181206" fecha_vigencia="20181207">
+          <p class="titulo_num">TÍTULO X</p>
+          <p class="titulo_tit">Garantía de los derechos digitales</p>
+        </version>
+      </bloque>
+      <bloque id="da-21" tipo="precepto" titulo="Disposición adicional vigésima primera">
+        <version id_norma="BOE-A-2018-16673" fecha_publicacion="20181206" fecha_vigencia="20181207">
+          <p class="articulo">Disposición adicional vigésima primera. Educación digital.</p>
+          <p class="parrafo">Las Administraciones educativas darán cumplimiento al mandato contenido en el párrafo segundo del apartado 1 del artículo 83 de esta ley orgánica en el plazo de un año a contar desde la entrada en vigor de la misma.</p>
+        </version>
+      </bloque>
+      <identificador>BOE-A-2018-16673</identificador><url_eli>https://www.boe.es/eli/es/lo/2018/12/05/3</url_eli></data></response>

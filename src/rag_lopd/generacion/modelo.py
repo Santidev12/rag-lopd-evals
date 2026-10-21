@@ -73,6 +73,18 @@ class Tarifa(BaseModel):
         ) / 1_000_000
 
 
+def buscar_tarifa(tarifas: dict[str, Tarifa], modelo: str) -> Tarifa:
+    """La tarifa conocida de un modelo, o un error: nunca una tarifa adivinada, porque el coste
+    que sale en el README sería inventado."""
+    tarifa = tarifas.get(modelo)
+    if tarifa is None:
+        raise ValueError(
+            f"no hay tarifa conocida para {modelo!r}: pásala explícita "
+            f"(modelos con tarifa: {', '.join(sorted(tarifas))})."
+        )
+    return tarifa
+
+
 class Completado(BaseModel):
     """Lo que devuelve cualquier modelo: el texto crudo y lo que costó."""
 

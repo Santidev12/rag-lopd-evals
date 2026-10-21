@@ -17,6 +17,7 @@ from rag_lopd.generacion.evaluacion import (
     Proporcion,
     evaluar_generacion,
     intervalo_wilson,
+    realinear,
     resumir,
 )
 from rag_lopd.generacion.modelo import (
@@ -512,3 +513,60 @@ def test_evaluar_generacion_recorre_las_aceptadas_y_avisa_de_cada_una() -> None:
     assert resumir(observaciones).sobre_respuesta == Proporcion(casos=1, exitos=1)
     assert len(modelo.usuarios) == 2
     assert set(modelo.sistemas) == {V2.sistema}
+
+
+# --- realinear con el eval set --------------------------------------------------------------------
+
+
+def _eval_con(*preguntas: Pregunta) -> EvalSet:
+    return EvalSet(version="test", preguntas=preguntas)
+
+
+def _pregunta_factual(id_: str) -> Pregunta:
+    return Pregunta(
+        id=id_,
+        pregunta="¿Cuánto cuesta presentar una reclamación ante la autoridad de control?",
+        tipo=TipoPregunta.FACTUAL,
+        respuesta="Nada: es gratuito para el interesado.",
+        fuente=(Identificador.parse("rgpd:art-57.3"),),
+        estado="aceptada",  # type: ignore[arg-type]
+    )
+
+
+def test_realinear_toma_tipo_y_fuente_del_eval_set_actual_y_no_toca_lo_que_hizo_el_modelo() -> None:
+    vieja = _obs("e-1", TipoPregunta.TRAMPA, Estado.RESPONDE, contextos=("rgpd:art-57",))
+
+    (nueva,) = realinear([vieja], _eval_con(_pregunta_factual("e-1")))
+
+    assert nueva.tipo is TipoPregunta.FACTUAL
+    assert nueva.fuente == (Identificador.parse("rgpd:art-57.3"),)
+    assert not nueva.debe_abstenerse
+    assert nueva.respuesta == vieja.respuesta
+    assert nueva.contextos == vieja.contextos
+
+
+def test_realinear_cambia_las_cifras_de_sobre_respuesta() -> None:
+    observaciones = [
+        _obs("e-1", TipoPregunta.TRAMPA, Estado.RESPONDE),
+        _obs("e-2", TipoPregunta.FUERA_DE_CORPUS, Estado.ABSTIENE),
+    ]
+    antes = resumir(observaciones)
+    despues = resumir(realinear(observaciones, _eval_con(_pregunta_factual("e-1"), _fuera("e-2"))))
+
+    assert (antes.sobre_respuesta.exitos, antes.sobre_respuesta.casos) == (1, 2)
+    assert (despues.sobre_respuesta.exitos, despues.sobre_respuesta.casos) == (0, 1)
+
+
+def test_realinear_rechaza_una_pasada_con_preguntas_que_ya_no_existen() -> None:
+    with pytest.raises(ValueError, match="e-9"):
+        realinear([_obs("e-9", TipoPregunta.TRAMPA, Estado.ABSTIENE)], _eval_con())
+
+
+def _fuera(id_: str) -> Pregunta:
+    return Pregunta(
+        id=id_,
+        pregunta="¿Qué opina la jurisprudencia del Tribunal Supremo sobre este asunto concreto?",
+        tipo=TipoPregunta.FUERA_DE_CORPUS,
+        respuesta="Debe abstenerse: el corpus no contiene jurisprudencia.",
+        estado="aceptada",  # type: ignore[arg-type]
+    )

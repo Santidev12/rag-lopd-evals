@@ -57,6 +57,27 @@ class Observacion(BaseModel):
         return {str(f.unidad_de_contexto) for f in self.fuente}
 
 
+def realinear(observaciones: list[Observacion], eval_set: EvalSet) -> list[Observacion]:
+    """Pone en cada observación el tipo y la fuente que la pregunta tiene HOY en el eval set.
+
+    Una observación guarda lo que el modelo hizo (contexto, respuesta, coste), que no cambia, pero
+    también una copia del tipo y la fuente de la pregunta de ese día. Si después se corrige la
+    pregunta (una referencia errónea, un tipo mal puesto), esa copia queda vieja y las cifras
+    saldrían contra un eval set que ya no existe. Realinear evita repetir la pasada, y pagarla,
+    por un cambio que no afecta a lo que el modelo contestó.
+    """
+    por_id = {p.id: p for p in eval_set.preguntas}
+    desconocidas = sorted(o.pregunta_id for o in observaciones if o.pregunta_id not in por_id)
+    if desconocidas:
+        raise ValueError(f"preguntas de la pasada que no están en el eval set: {desconocidas}")
+    return [
+        o.model_copy(
+            update={"tipo": por_id[o.pregunta_id].tipo, "fuente": por_id[o.pregunta_id].fuente}
+        )
+        for o in observaciones
+    ]
+
+
 def evaluar_generacion(
     modelo: ModeloDeLenguaje,
     recuperador: Recuperador,

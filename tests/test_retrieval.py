@@ -10,6 +10,18 @@ from rag_lopd.eval.modelo import EvalSet, Pregunta, TipoPregunta
 from rag_lopd.model import Granularidad, Identificador, UnidadIndexable
 from rag_lopd.retrieval.bm25 import RecuperadorBM25
 from rag_lopd.retrieval.evaluacion import evaluar_recall, preguntas_evaluables
+from rag_lopd.retrieval.modelo import Resultado
+
+
+class _RecuperadorFijo:
+    """Devuelve siempre la misma lista, sea cual sea la consulta. Solo para tests: aísla el
+    harness de evaluación del ranking real de BM25, que no viene a cuento aquí."""
+
+    def __init__(self, resultados: list[Resultado]) -> None:
+        self._resultados = resultados
+
+    def buscar(self, consulta: str, *, k: int = 10) -> list[Resultado]:
+        return self._resultados[:k]
 
 
 def _unidad(id_texto: str, texto: str, ruta: str) -> UnidadIndexable:
@@ -123,3 +135,56 @@ def test_evaluar_recall_cuenta_acierto_en_cruzada_solo_si_aparecen_todas_las_fue
     resultado_estrecho = evaluar_recall(recuperador, eval_set, k=1)
     assert resultado_estrecho.aciertos == 0
     assert resultado_estrecho.fallos == ("cruzada-1",)
+
+
+def test_evaluar_recall_a_nivel_articulo_cuenta_acierto_aunque_el_apartado_no_coincida() -> None:
+    # El patrón real que motivó este nivel: para "qué empresas quedan exentas del registro de
+    # actividades de tratamiento" (rgpd:art-30.5), BM25 devolvió rgpd:art-30.1 y art-30.2 — el
+    # mismo artículo, otros apartados. Por el ADR 0001 el generador recibe el artículo entero,
+    # así que de cara al sistema eso SÍ es un acierto, aunque el apartado exacto no coincida.
+    recuperador = _RecuperadorFijo(
+        [
+            Resultado(id=Identificador.parse("rgpd:art-30.1"), score=1.0, texto="", ruta=""),
+            Resultado(id=Identificador.parse("rgpd:art-30.2"), score=0.9, texto="", ruta=""),
+        ]
+    )
+    eval_set = EvalSet(
+        version="test",
+        preguntas=(
+            _pregunta(
+                "e-004",
+                TipoPregunta.FACTUAL,
+                ("rgpd:art-30.5",),
+                "Qué empresas quedan exentas de llevar el registro de actividades de tratamiento",
+            ),
+        ),
+    )
+
+    a_nivel_apartado = evaluar_recall(recuperador, eval_set, k=10, nivel="apartado")
+    a_nivel_articulo = evaluar_recall(recuperador, eval_set, k=10, nivel="articulo")
+
+    assert a_nivel_apartado.aciertos == 0
+    assert a_nivel_apartado.fallos == ("e-004",)
+    assert a_nivel_articulo.aciertos == 1
+    assert a_nivel_articulo.fallos == ()
+
+
+def test_evaluar_recall_a_nivel_articulo_no_perdona_un_articulo_distinto() -> None:
+    # Que "articulo" sea más permisivo no significa que perdone cualquier cosa: si lo recuperado
+    # es de otro artículo, sigue sin contar.
+    recuperador = _RecuperadorFijo(
+        [Resultado(id=Identificador.parse("rgpd:art-6.3"), score=1.0, texto="", ruta="")]
+    )
+    eval_set = EvalSet(
+        version="test",
+        preguntas=(
+            _pregunta(
+                "e-004",
+                TipoPregunta.FACTUAL,
+                ("rgpd:art-30.5",),
+                "Qué empresas quedan exentas de llevar el registro de actividades de tratamiento",
+            ),
+        ),
+    )
+
+    assert evaluar_recall(recuperador, eval_set, nivel="articulo").aciertos == 0

@@ -29,10 +29,16 @@ class Settings(BaseSettings):
     """Identificador de la LOPDGDD (Ley Orgánica 3/2018)."""
 
     cellar_base: str = "http://publications.europa.eu/resource/celex"
-    """Cellar, no eur-lex.europa.eu: EUR-Lex bloquea a los clientes que no son navegador (AWS WAF)."""
+    """Cellar, no eur-lex.europa.eu.
+
+    EUR-Lex responde con un reto JS de AWS WAF a cualquier cliente que no sea un navegador.
+    """
 
     rgpd_celex: str = "02016R0679-20160504"
-    """CELEX del RGPD consolidado. Sin el prefijo 0 sería el acto original, que sí trae considerandos."""
+    """CELEX del RGPD consolidado.
+
+    Sin el 0 inicial sería el acto original, que sí trae los 173 considerandos.
+    """
 
     # --- Rutas --------------------------------------------------------------
     data_dir: Path = Path("data")

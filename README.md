@@ -36,23 +36,40 @@ Las decisiones con su evidencia están en [`docs/research/`](docs/research/).
 | Métrica | Valor |
 | --- | --- |
 | Recall@5 / Recall@20 | — |
-| Exactitud de respuesta (preguntas respondibles, IC 95 %) | — |
-| Cita cubre el artículo fuente | 86,7 % (26/30, IC 95 %: 70 %–95 %) |
-| **Tasa de sobre-respuesta** (responde sin tener la respuesta) | 11,8 % (2/17, IC 95 %: 3 %–34 %) |
-| **Tasa de abstención indebida** (calla teniendo la respuesta) | 9,1 % (3/33, IC 95 %: 3 %–24 %) |
+| Exactitud de respuesta (preguntas respondibles, IC 95 %) | 79,4 % (27/34, IC 95 %: 63 %–90 %); 87,1 % de las que contesta (27/31) |
+| Cita cubre el artículo fuente | 87,1 % (27/31, IC 95 %: 71 %–95 %) |
+| **Tasa de sobre-respuesta** (responde sin tener la respuesta) | 6,2 % (1/16, IC 95 %: 1 %–28 %) |
+| **Tasa de abstención indebida** (calla teniendo la respuesta) | 8,8 % (3/34, IC 95 %: 3 %–23 %) |
 
 El eval set (50 preguntas con respuesta correcta y fuente esperada) está versionado en
 [`eval/`](eval/). Incluye preguntas sin respuesta en el corpus y preguntas trampa: sin ellas,
-la evaluación no mide el fallo que más importa. Reparto: 15 factual · 12 cruzada · 6 temporal ·
-10 fuera de corpus · 7 trampa.
+la evaluación no mide el fallo que más importa. Reparto: 16 factual · 12 cruzada · 6 temporal ·
+10 fuera de corpus · 6 trampa.
 
 Cómo se construyó, y cómo se defiende de que un LLM se invente las respuestas, en
 [`docs/eval-set.md`](docs/eval-set.md). **Estado actual: las 50 preguntas están revisadas y
-aceptadas.** Los números de generación son de una sola pasada (un modelo, prompt v2) y miden comportamiento
-(contestar / callar / citar), no si el contenido es correcto: eso necesita el harness con juez.
-Con el prompt v1 la abstención indebida era del 15,2 % (5/33): las dos de diferencia son preguntas
-temporales, para las que se diseñó v2 (ver el ticket del proyecto), así que no es una mejora que
-se pueda extrapolar.
+aceptadas.** Los números de generación son de una sola pasada (un modelo, prompt v2).
+
+**Una pregunta se corrigió a posteriori.** e-047 (¿qué tasa debe abonar un ciudadano para reclamar
+ante la AEPD?) estaba etiquetada como trampa ("el corpus no prevé ninguna tasa"), pero el RGPD,
+art. 57.3, dice que es gratuito: el sistema contestaba bien y la referencia era la equivocada. Se
+descubrió porque el juez la marcó como discrepancia, y se reconvirtió en pregunta factual el
+16-oct-2026. Con la corrección la sobre-respuesta baja de 2/17 a 1/16, y eso **no es una mejora
+del sistema**: es una etiqueta mal puesta que dejó de contar en su contra. La que queda (e-046,
+"¿qué formato concreto debe tener el registro?") cita el art. 30 sin inventar ningún formato, y una
+revisión manual la da por correcta.
+
+La exactitud la mide un juez automático (DeepSeek-V4-Flash, otra familia que el generador, contra
+la respuesta de referencia). Antes de fiarse se comparó con una revisión manual de las 32 respuestas
+contestadas: coincide en 31 (kappa 0,84). Salvedades: esa revisión la hizo una IA salvo las 7
+respuestas dudosas, que cerró una persona, y el kappa se apoya en solo 3 respuestas no correctas, así
+que es una estimación inestable. El juez tiene un sesgo conocido: trata como esencial todo lo que
+añade la referencia aunque la pregunta no lo pida (caso e-019), por lo que es algo más estricto que
+un revisor humano.
+
+Con el prompt v1 la abstención indebida era del 14,7 % (5/34) y la exactitud del 76,5 % (26/34). La
+diferencia en abstención son dos preguntas temporales, para las que se diseñó v2; la de exactitud es
+de una sola respuesta, dentro del ruido. No es una mejora que se pueda extrapolar.
 
 ```bash
 uv run rag-lopd eval validar   # reglas del eval set + todas las fuentes existen en el corpus
@@ -66,7 +83,7 @@ uv run rag-lopd eval tabla     # exporta docs/eval-candidatas.md para revisar
 | --- | --- |
 | Coste medio por consulta | ≈ 0,0020 $ (Gemini 3.5 Flash-Lite, ~5.600 tokens de entrada) |
 | Latencia p50 / p95 | — |
-| Modos de fallo conocidos | — |
+| Modos de fallo conocidos | Las preguntas cruzadas son lo débil: 6/12 correctas. Tres se callan (en dos el artículo transversal que hace falta no llega a recuperarse; la tercera es un fallo de generación) y tres salen parciales (una por recuperación, una por no aplicar la regla al caso concreto y una, discutible, por omitir un dato que la referencia incluye y la pregunta no pide). Además, una factual (e-010) cita el art. 19 del RGPD habiendo recibido el artículo correcto de la LOPDGDD. |
 
 ---
 
@@ -119,6 +136,8 @@ observación para recalcular sin volver a pagar:
 uv run rag-lopd generacion preguntar "..."   # recupera, genera y enseña cita y coste
 uv run rag-lopd generacion evaluar           # las 50 preguntas; llama a Gemini (céntimos)
 uv run rag-lopd generacion evaluar --prompt v1   # reproduce la primera pasada
+uv run rag-lopd generacion juzgar data/runs/<pasada>.jsonl   # juez (DeepSeek en DeepInfra): ¿es correcto el contenido?
+uv run rag-lopd generacion calibrar <juicios>.jsonl eval/etiquetas-v2-preliminares.jsonl eval/etiquetas-v2-santiago.jsonl
 uv run rag-lopd generacion resumir data/runs/<pasada>.jsonl
 ```
 

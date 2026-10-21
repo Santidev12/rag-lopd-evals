@@ -20,7 +20,8 @@ from typing import Any
 import httpx
 
 from rag_lopd.config import Settings
-from rag_lopd.generacion.modelo import Completado, Tarifa, Uso
+from rag_lopd.generacion.modelo import Completado, Tarifa, Uso, buscar_tarifa
+from rag_lopd.generacion.reintentos import post_con_reintentos
 
 URL = "https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent"
 MODELO_POR_DEFECTO = "gemini-3.5-flash-lite"
@@ -32,20 +33,9 @@ TARIFAS: dict[str, Tarifa] = {
     "gemini-3.1-flash-lite": Tarifa(entrada_usd_mtok=0.25, salida_usd_mtok=1.50),
 }
 
-_ESTADOS_REINTENTABLES = {429, 500, 502, 503, 504}
-_MAX_INTENTOS = 5
-_ESPERA_MAXIMA_SEGUNDOS = 60.0
-
 
 def tarifa_de(modelo: str) -> Tarifa:
-    """La tarifa conocida de un modelo, o un error: nunca una tarifa adivinada."""
-    tarifa = TARIFAS.get(modelo)
-    if tarifa is None:
-        raise ValueError(
-            f"no hay tarifa conocida para {modelo!r}: pásala explícita "
-            f"(modelos con tarifa: {', '.join(sorted(TARIFAS))})."
-        )
-    return tarifa
+    return buscar_tarifa(TARIFAS, modelo)
 
 
 class GeminiModelo:
@@ -77,19 +67,11 @@ class GeminiModelo:
             "contents": [{"role": "user", "parts": [{"text": usuario}]}],
             "generationConfig": {"temperature": 0, "responseMimeType": "application/json"},
         }
-        respuesta = self._post_con_reintentos(URL.format(modelo=self.nombre), cuerpo)
+        respuesta = post_con_reintentos(
+            self._cliente, URL.format(modelo=self.nombre), cuerpo, esperar=self._esperar
+        )
         datos = respuesta.json()
         return Completado(texto=_texto(datos), uso=_uso(datos))
-
-    def _post_con_reintentos(self, url: str, cuerpo: dict[str, Any]) -> httpx.Response:
-        for intento in range(1, _MAX_INTENTOS + 1):
-            respuesta = self._cliente.post(url, json=cuerpo)
-            reintentable = respuesta.status_code in _ESTADOS_REINTENTABLES
-            if not reintentable or intento == _MAX_INTENTOS:
-                respuesta.raise_for_status()
-                return respuesta
-            self._esperar(_espera(respuesta, intento))
-        raise AssertionError("inalcanzable: el último intento siempre devuelve o lanza")
 
     def close(self) -> None:
         self._cliente.close()
@@ -99,17 +81,6 @@ class GeminiModelo:
 
     def __exit__(self, *_exc_info: object) -> None:
         self.close()
-
-
-def _espera(respuesta: httpx.Response, intento: int) -> float:
-    """`Retry-After` si el servidor lo da; si no, 2, 4, 8... segundos, con tope."""
-    cabecera = respuesta.headers.get("retry-after")
-    if cabecera is not None:
-        try:
-            return min(float(cabecera), _ESPERA_MAXIMA_SEGUNDOS)
-        except ValueError:
-            pass
-    return min(2.0**intento, _ESPERA_MAXIMA_SEGUNDOS)
 
 
 def _texto(datos: dict[str, Any]) -> str:

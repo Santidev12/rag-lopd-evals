@@ -16,10 +16,29 @@ import typer
 
 from rag_lopd.config import Settings, get_settings
 from rag_lopd.eval.almacen import leer as leer_eval_set
-from rag_lopd.eval.modelo import TipoPregunta
+from rag_lopd.eval.modelo import EvalSet, TipoPregunta
+from rag_lopd.generacion import deepinfra
 from rag_lopd.generacion.contexto import contextos_para, indexar_articulos
-from rag_lopd.generacion.evaluacion import Observacion, Resumen, evaluar_generacion, resumir
+from rag_lopd.generacion.deepinfra import DeepInfraModelo
+from rag_lopd.generacion.evaluacion import (
+    Observacion,
+    Resumen,
+    evaluar_generacion,
+    realinear,
+    resumir,
+)
 from rag_lopd.generacion.gemini import MODELO_POR_DEFECTO, GeminiModelo, tarifa_de
+from rag_lopd.generacion.juez import VERSION as VERSION_JUEZ
+from rag_lopd.generacion.juez import (
+    Etiqueta,
+    Juicio,
+    Veredicto,
+    calibrar,
+    juzgar_pasada,
+    leer_etiquetas,
+    leer_juicios,
+    resumir_juicios,
+)
 from rag_lopd.generacion.modelo import Tarifa
 from rag_lopd.generacion.prompt import PROMPT_POR_DEFECTO, Prompt, prompt_de
 from rag_lopd.generacion.responder import responder
@@ -194,13 +213,167 @@ def evaluar(
 def resumir_fichero(
     fichero: Annotated[Path, typer.Argument(help="Un fichero de data/runs/.")],
     modelo: _MODELO = MODELO_POR_DEFECTO,
+    eval_set_path: Annotated[Path, typer.Option("--eval-set")] = _EVAL_SET_POR_DEFECTO,
 ) -> None:
-    """Recalcula las cifras de una pasada guardada, sin llamar a ningún modelo."""
-    lineas = [x for x in fichero.read_text(encoding="utf-8").splitlines() if x.strip()]
-    observaciones = [Observacion.model_validate_json(x) for x in lineas]
+    """Recalcula las cifras de una pasada guardada, sin llamar a ningún modelo.
+
+    Cuenta contra el eval set actual (tipo y fuente de cada pregunta), no contra el de cuando se
+    hizo la pasada. Sin eval set a mano, usa lo que la pasada guardó y lo avisa.
+    """
     try:
         tarifa = tarifa_de(modelo)
     except ValueError as error:
         raise _fallar(f"Error: {error}") from error
+    eval_set = leer_eval_set(eval_set_path) if eval_set_path.exists() else None
+    if eval_set is None:
+        typer.secho(
+            f"Aviso: no hay eval set en {eval_set_path}; se usan el tipo y la fuente que guardó "
+            "la pasada.",
+            fg=typer.colors.YELLOW,
+        )
+    observaciones = _leer_observaciones(fichero, eval_set)
     typer.echo(f"{fichero.name}: {len(observaciones)} observaciones")
     _imprimir_resumen(resumir(observaciones), tarifa)
+
+
+# --- el juez ------------------------------------------------------------------------------------
+
+_MODELO_JUEZ = Annotated[
+    str, typer.Option("--modelo-juez", help="Modelo de DeepInfra que hace de juez.")
+]
+
+
+def _leer_observaciones(fichero: Path, eval_set: EvalSet | None = None) -> list[Observacion]:
+    """Lee una pasada; con eval set, realinea tipo y fuente y dice qué preguntas cambiaron."""
+    lineas = [x for x in fichero.read_text(encoding="utf-8").splitlines() if x.strip()]
+    guardadas = [Observacion.model_validate_json(x) for x in lineas]
+    if eval_set is None:
+        return guardadas
+    try:
+        alineadas = realinear(guardadas, eval_set)
+    except ValueError as error:
+        raise _fallar(f"Error: {error}") from error
+    for antes, ahora in zip(guardadas, alineadas, strict=True):
+        if antes.tipo is not ahora.tipo or antes.fuente != ahora.fuente:
+            typer.echo(
+                f"  realineada con el eval set: {antes.pregunta_id} "
+                f"({antes.tipo.value} -> {ahora.tipo.value})"
+            )
+    return alineadas
+
+
+def _ruta_juicios(fichero: Path, modelo_juez: str) -> Path:
+    """Junto a la pasada y con el juez y la rúbrica en el nombre: dos jueces o dos versiones de la
+    rúbrica sobre la misma pasada no se pisan."""
+    juez = modelo_juez.rsplit("/", 1)[-1].lower()
+    return fichero.with_name(f"{fichero.stem}.juez-{juez}-{VERSION_JUEZ}.jsonl")
+
+
+def _imprimir_resumen_juicios(observaciones: list[Observacion], juicios: dict[str, Juicio]) -> None:
+    resumen = resumir_juicios(observaciones, juicios)
+    typer.echo("")
+    typer.echo("Exactitud (respondibles contestadas correctamente; callar cuenta como fallo):")
+    typer.echo(f"  {resumen.exactitud}")
+    typer.echo("Exactitud de las contestadas (el contenido, sin contar lo que se calla):")
+    typer.echo(f"  {resumen.exactitud_de_las_contestadas}")
+    typer.echo(f"  parciales: {resumen.parciales} · incorrectas: {resumen.incorrectas}")
+    typer.echo("Exactitud por tipo:")
+    for tipo, proporcion in resumen.exactitud_por_tipo.items():
+        typer.echo(f"  {tipo.value:16} {proporcion}")
+    typer.echo("Sobre-respuesta grave (sin respuesta, contesta y afirma algo sin base):")
+    typer.echo(f"  {resumen.sobre_respuesta_grave}")
+    if resumen.juicios_invalidos:
+        typer.secho(
+            f"ATENCIÓN: {resumen.juicios_invalidos} juicio(s) sin el JSON pedido: no cuentan "
+            "como correctos.",
+            fg=typer.colors.YELLOW,
+        )
+    typer.echo(
+        f"Tokens del juez: {resumen.uso.tokens_entrada} entrada, {resumen.uso.tokens_salida} salida"
+    )
+
+
+@app.command()
+def juzgar(
+    fichero: Annotated[Path, typer.Argument(help="Un fichero de data/runs/ (pasada de evaluar).")],
+    eval_set_path: Annotated[Path, typer.Option("--eval-set")] = _EVAL_SET_POR_DEFECTO,
+    modelo_juez: _MODELO_JUEZ = deepinfra.MODELO_POR_DEFECTO,
+) -> None:
+    """Juzga si el contenido de cada respuesta de una pasada es correcto, contra la referencia.
+
+    Llama al juez (céntimos). Guarda cada juicio junto a la pasada según termina; si se repite
+    el comando no se paga de nuevo lo ya juzgado.
+    """
+    settings = get_settings()
+    eval_set = leer_eval_set(eval_set_path)
+    observaciones = _leer_observaciones(fichero, eval_set)
+    unidades = cargar_unidades(settings.processed_dir)
+    if not unidades:
+        raise _fallar(f"No hay unidades en {settings.processed_dir}. Ejecuta 'rag-lopd ingest'.")
+
+    salida = _ruta_juicios(fichero, modelo_juez)
+    previos = leer_juicios(salida.read_text(encoding="utf-8")) if salida.exists() else {}
+    typer.echo(
+        f"{fichero.name}: {len(observaciones)} observaciones · juez {modelo_juez} · rúbrica "
+        f"{VERSION_JUEZ} · {len(previos)} ya juzgadas"
+    )
+
+    def guardar(juicio: Juicio) -> None:
+        with salida.open("a", encoding="utf-8") as destino:
+            destino.write(juicio.model_dump_json() + "\n")
+        typer.echo(f"  {juicio.pregunta_id} {juicio.veredicto.value}")
+
+    try:
+        with DeepInfraModelo(settings, modelo=modelo_juez) as juez:
+            juicios = juzgar_pasada(
+                juez, observaciones, eval_set, unidades, previos=previos, al_terminar=guardar
+            )
+    except (ValueError, httpx.HTTPError) as error:
+        typer.secho(f"Error: {error}\nLo ya juzgado queda en {salida}.", fg=typer.colors.RED)
+        raise typer.Exit(code=1) from error
+
+    typer.echo(f"\nGuardado en {salida}")
+    _imprimir_resumen_juicios(observaciones, juicios)
+    dudosos = [j for j in juicios.values() if j.veredicto is not Veredicto.CORRECTA]
+    if dudosos:
+        typer.echo("\nNo correctas, con el motivo del juez (revísalas a mano):")
+        for juicio in sorted(dudosos, key=lambda j: j.pregunta_id):
+            typer.echo(f"  {juicio.pregunta_id} {juicio.veredicto.value}: {juicio.motivo}")
+
+
+@app.command("calibrar")
+def calibrar_juez(
+    juicios_path: Annotated[Path, typer.Argument(help="Los juicios guardados por `juzgar`.")],
+    etiquetas_paths: Annotated[
+        list[Path],
+        typer.Argument(help="Etiquetas manuales (JSONL). Cada fichero pisa al anterior por id."),
+    ],
+) -> None:
+    """Compara al juez con etiquetas manuales: acuerdo, kappa y discrepancias. No llama a nadie.
+
+    Con varios ficheros de etiquetas, las de los últimos prevalecen: `preliminares` primero y
+    después las de quien las revisó a mano.
+    """
+    juicios = leer_juicios(juicios_path.read_text(encoding="utf-8"))
+    por_id: dict[str, Etiqueta] = {}
+    for ruta in etiquetas_paths:
+        propias = leer_etiquetas(ruta.read_text(encoding="utf-8"))
+        pisadas = [e.pregunta_id for e in propias if e.pregunta_id in por_id]
+        por_id.update({e.pregunta_id: e for e in propias})
+        typer.echo(f"{ruta.name}: {len(propias)} etiquetas, {len(pisadas)} pisan a las anteriores")
+    etiquetas = list(por_id.values())
+    acuerdo = calibrar(juicios, etiquetas)
+    typer.echo(f"{acuerdo.casos} respuestas con juicio y etiqueta")
+    typer.echo(f"Acuerdo exacto (3 niveles):        {acuerdo.bruto}")
+    typer.echo(f"Acuerdo en correcta / no correcta: {acuerdo.binario}")
+    typer.echo(f"Kappa de Cohen (3 niveles):        {acuerdo.kappa:.2f}")
+    typer.echo("Matriz (etiqueta -> juez):")
+    for (etiqueta, juez), veces in sorted(acuerdo.matriz.items(), key=lambda x: str(x[0])):
+        typer.echo(f"  {etiqueta.value:11} -> {juez.value:11} {veces}")
+    if acuerdo.discrepancias:
+        typer.echo("\nDiscrepancias:")
+        for d in acuerdo.discrepancias:
+            typer.echo(
+                f"  {d.pregunta_id}: etiqueta {d.etiqueta.value}, juez {d.juez.value} "
+                f"- {d.motivo_del_juez}"
+            )

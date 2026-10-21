@@ -1,0 +1,81 @@
+# Candidatas del eval set — `candidatas-v0`
+
+Generadas leyendo el corpus normalizado y **pendientes de revisión humana**. Marca cada
+una en el `.jsonl` poniendo `estado` a `aceptada` o `descartada`; si la descartas,
+deja el motivo en `notas`.
+Por qué se descartó una pregunta es material del README.
+
+## factual (15)
+
+| id | pregunta | respuesta esperada | fuente | notas |
+| --- | --- | --- | --- | --- |
+| `e-001` | Nos han accedido sin permiso a la base de datos de clientes. ¿A quién hay que avisar y en cuánto tiempo? | A la autoridad de control competente, sin dilación indebida y a más tardar 72 horas después de tener constancia. Si se pasa el plazo, la notificación debe indicar los motivos de la dilación. | `rgpd:art-33.1` | Si responde '72 horas' sin el matiz de 'sin dilación indebida', cuenta como parcial. |
+| `e-002` | ¿Cuánto tiempo tiene una empresa para contestar a alguien que le pide acceso a sus datos? | Un mes desde la recepción de la solicitud, prorrogable otros dos meses por la complejidad o el número de solicitudes, informando de la prórroga dentro del primer mes. | `rgpd:art-12.3` |  |
+| `e-003` | ¿A partir de qué edad puede un menor consentir por sí solo el tratamiento de sus datos en España? | A partir de los catorce años. | `lopdgdd:art-7.1` | Respuesta muy corta a propósito: es un número. Si contesta 16, está aplicando el RGPD sin la especialidad española. |
+| `e-004` | ¿Qué empresas quedan exentas de llevar el registro de actividades de tratamiento? | Las de menos de 250 empleados, salvo que el tratamiento entrañe un riesgo para los derechos y libertades, no sea ocasional, o incluya categorías especiales o datos relativos a condenas e infracciones penales. | `rgpd:art-30.5` | La lista de excepciones es la parte que se suele olvidar. |
+| `e-005` | ¿Cuál es la multa máxima por vulnerar los principios básicos del tratamiento y las condiciones del consentimiento? | 20.000.000 EUR o, si es una empresa, el 4 % del volumen de negocio total anual global del ejercicio anterior, la cuantía que sea mayor. | `rgpd:art-83.5` |  |
+| `e-006` | ¿Cuándo hay que comunicar una brecha de seguridad a los propios afectados y no solo a la autoridad? | Cuando sea probable que la violación entrañe un alto riesgo para los derechos y libertades de las personas físicas; entonces se comunica sin dilación indebida. | `rgpd:art-34.1` |  |
+| `e-007` | ¿En qué situaciones hay que hacer una evaluación de impacto antes de empezar a tratar datos? | Cuando sea probable que el tipo de tratamiento, en particular si usa nuevas tecnologías, entrañe un alto riesgo para los derechos y libertades, por su naturaleza, alcance, contexto o fines. | `rgpd:art-35.1` |  |
+| `e-008` | ¿Qué plazo de prescripción tienen las infracciones leves según la ley española de protección de datos? | Un año. | `lopdgdd:art-74` |  |
+| `e-009` | ¿Cuánto tardan en prescribir las sanciones de importe superior a 300.000 euros? | Tres años. | `lopdgdd:art-78.1` | El artículo da tres tramos; solo se pregunta por el alto. |
+| `e-010` | ¿Qué obligación adicional tiene el responsable cuando rectifica o suprime datos personales? | Bloquear los datos. | `lopdgdd:art-32.1` | El bloqueo es una figura propia de la ley española que no está en el RGPD. |
+| `e-011` | ¿Con qué finalidad permite la ley española instalar cámaras de videovigilancia? | Para preservar la seguridad de las personas y bienes, así como de sus instalaciones. | `lopdgdd:art-22.1` |  |
+| `e-012` | ¿Qué derecho reconoce la ley a los trabajadores fuera de su tiempo de trabajo frente a los dispositivos digitales? | El derecho a la desconexión digital, para garantizar el respeto de su tiempo de descanso, permisos y vacaciones y de su intimidad personal y familiar. | `lopdgdd:art-88.1` |  |
+| `e-013` | ¿En qué supuestos obliga el reglamento europeo a designar un delegado de protección de datos? | Cuando el tratamiento lo lleve a cabo una autoridad u organismo público (salvo tribunales en función judicial); cuando las actividades principales requieran observación habitual y sistemática de interesados a gran escala; o cuando consistan en tratamiento a gran escala de categorías especiales o de datos penales. | `rgpd:art-37.1` | Son tres supuestos; acertar dos de tres es parcial. |
+| `e-014` | ¿Qué edad fija el reglamento europeo para que un niño consienta servicios de la sociedad de la información? | 16 años como mínimo; los Estados miembros pueden establecer por ley una edad inferior, nunca por debajo de 13 años. | `rgpd:art-8.1` | El margen de 13 años es la parte que distingue una respuesta buena de una a medias. |
+| `e-015` | ¿Cuál es la multa máxima por incumplir las obligaciones del responsable y del encargado del tratamiento? | 10.000.000 EUR o el 2 % del volumen de negocio total anual global del ejercicio anterior, la mayor. | `rgpd:art-83.4` | Se confunde con facilidad con el tramo del 4 % del artículo 83.5. |
+
+## cruzada (12)
+
+| id | pregunta | respuesta esperada | fuente | notas |
+| --- | --- | --- | --- | --- |
+| `e-016` | Tras una brecha de seguridad, ¿basta con avisar a la autoridad de control o hay que avisar también a los clientes? | A la autoridad siempre (72 horas, salvo que sea improbable el riesgo). A los afectados solo cuando sea probable un alto riesgo para sus derechos y libertades, y entonces sin dilación indebida. | `rgpd:art-33.1`<br>`rgpd:art-34.1` | Exige distinguir dos umbrales de riesgo distintos. |
+| `e-017` | ¿Qué edad de consentimiento se aplica en España y en qué se diferencia de la que fija el reglamento europeo? | El RGPD fija 16 años y permite a los Estados bajarla hasta un mínimo de 13; España la fijó en 14 años en la LOPDGDD. | `rgpd:art-8.1`<br>`lopdgdd:art-7.1` | Cruza norma europea y española: es el caso típico donde un RAG recupera solo una de las dos. |
+| `e-018` | ¿En qué casos debe una entidad española nombrar delegado de protección de datos aunque el reglamento europeo no lo exija? | Además de los tres supuestos del artículo 37.1 del RGPD, la ley española lo impone en todo caso a una lista de entidades: colegios profesionales y sus consejos generales, centros docentes y universidades, operadores de comunicaciones electrónicas que traten datos a gran escala, entre otras. | `rgpd:art-37.1`<br>`lopdgdd:art-34.1` |  |
+| `e-019` | ¿Qué multa máxima corresponde a tratar datos sin base de licitud y cómo clasifica esa conducta la ley española? | Hasta 20.000.000 EUR o el 4 % del volumen de negocio anual global; la ley española la califica como infracción muy grave, que prescribe a los tres años. | `rgpd:art-83.5`<br>`lopdgdd:art-72.1` |  |
+| `e-020` | ¿Cuánto puede durar la investigación previa de la AEPD y en cuánto tiempo prescribe una infracción muy grave? | La investigación previa no puede superar los dieciocho meses; las infracciones muy graves prescriben a los tres años. | `lopdgdd:art-67.2`<br>`lopdgdd:art-72.1` |  |
+| `e-021` | ¿Qué plazo hay para atender un derecho de supresión y qué debe hacerse con los datos una vez suprimidos? | Un mes desde la solicitud, prorrogable dos meses más; y el responsable queda obligado a bloquear los datos al proceder a su supresión. | `rgpd:art-12.3`<br>`lopdgdd:art-32.1` |  |
+| `e-022` | ¿Qué plazo hay para notificar una brecha de seguridad y qué multa máxima se arriesga por no hacerlo? | 72 horas desde que se tiene constancia; el incumplimiento entra en el tramo de hasta 10.000.000 EUR o el 2 % del volumen de negocio global. | `rgpd:art-33.1`<br>`rgpd:art-83.4` | El artículo 33 está entre los que el 83.4 sanciona; ese enlace es lo que hay que recuperar. |
+| `e-023` | ¿Qué obligaciones tiene una clínica de veinte empleados respecto al registro de actividades y a la evaluación de impacto? | La exención de registro por tener menos de 250 empleados no le aplica si trata categorías especiales, y los datos de salud lo son; y debe hacer evaluación de impacto si el tratamiento entraña alto riesgo. | `rgpd:art-30.5`<br>`rgpd:art-35.1` | Pregunta de usuario real: la respuesta correcta es que la exención NO le sirve. |
+| `e-024` | ¿Qué garantías exige la ley española para la videovigilancia y qué base de licitud del reglamento la ampara? | La ley española la permite para preservar la seguridad de personas, bienes e instalaciones, con deber de información mediante dispositivo informativo visible; la base de licitud habitual es el interés legítimo del artículo 6.1 del RGPD. | `lopdgdd:art-22.1`<br>`rgpd:art-6.1` |  |
+| `e-025` | ¿Qué plazo de prescripción tienen las infracciones leves y con qué apartados del reglamento se corresponden? | Prescriben al año, y son las infracciones meramente formales de los artículos mencionados en los apartados 4 y 5 del artículo 83 del RGPD. | `lopdgdd:art-74`<br>`rgpd:art-83.4` |  |
+| `e-026` | ¿Cuándo hay que comunicar la brecha a los afectados y en qué tramo de sanción entra no comunicarla? | Cuando sea probable un alto riesgo para sus derechos y libertades; el incumplimiento del artículo 34 entra en el tramo de hasta 10.000.000 EUR o el 2 %. | `rgpd:art-34.1`<br>`rgpd:art-83.4` |  |
+| `e-027` | ¿Qué relación hay entre la duración de las actuaciones previas y el plazo de prescripción de las sanciones más altas? | Las actuaciones previas no pueden durar más de dieciocho meses; las sanciones superiores a 300.000 euros prescriben a los tres años. | `lopdgdd:art-67.2`<br>`lopdgdd:art-78.1` | Pregunta deliberadamente rebuscada: mide si el sistema junta dos plazos que viven lejos uno de otro. |
+
+## temporal (6)
+
+| id | pregunta | respuesta esperada | fuente | notas |
+| --- | --- | --- | --- | --- |
+| `e-028` | ¿Cuánto pueden durar las actuaciones previas de investigación de la AEPD, y cuánto duraban antes? | Hoy dieciocho meses. Hasta la reforma que entró en vigor el 10 de mayo de 2023 el límite era de doce meses. | `lopdgdd:art-67.2` | El corpus conserva las dos versiones; responder 'doce meses' es recuperar la versión derogada. |
+| `e-029` | ¿Qué ocurrió con la previsión que amparaba a los partidos políticos para recopilar datos sobre opiniones políticas? | Fue anulada. Desde el 25 de junio de 2019 el apartado figura como «(Anulado)» en el texto consolidado. | `lopdgdd:df-3.1` | Caso extremo: el texto vigente es literalmente '(Anulado)'. Un sistema que recupere la versión antigua dará por vigente algo que no lo está. |
+| `e-030` | ¿Qué organismos colaboran actualmente con la AEPD en materia de protección de datos en la Administración de Justicia? | La AEPD, el Consejo General del Poder Judicial y, en su caso, la Fiscalía General del Estado. La Fiscalía se añadió en la versión vigente desde el 16 de junio de 2021. | `lopdgdd:art-44.3` |  |
+| `e-031` | ¿A qué apartado del artículo 64 remite hoy el artículo 66.1 sobre alcance territorial? | Al artículo 64.4. En la redacción anterior a mayo de 2023 remitía al 64.3. | `lopdgdd:art-66.1` | Cambio de una sola cifra. Si el sistema recupera la versión vieja, la respuesta es incorrecta y suena perfectamente convincente. |
+| `e-032` | ¿Qué tratamientos del Ministerio Fiscal se incorporaron al ámbito de aplicación de la ley española y desde cuándo? | Los realizados con ocasión de la tramitación de los procesos de su competencia y en la gestión de la Oficina Fiscal, incorporados en el apartado 5 del artículo 2, vigente desde el 16 de junio de 2021. | `lopdgdd:art-2.5` | El apartado no existía en la redacción original de 2018. |
+| `e-033` | ¿Cómo describe hoy la ley el uso de los medios digitales que debe garantizar el sistema educativo? | Un consumo responsable y un uso crítico y seguro de los medios digitales, respetuoso con la dignidad humana y los valores constitucionales. La redacción anterior hablaba solo de un uso seguro y respetuoso. | `lopdgdd:art-83.1` |  |
+
+## fuera_de_corpus (10)
+
+| id | pregunta | respuesta esperada | fuente | notas |
+| --- | --- | --- | --- | --- |
+| `e-034` | ¿Qué obligaciones impone el Reglamento Europeo de Inteligencia Artificial a los sistemas de alto riesgo? | Debe abstenerse: el AI Act no forma parte del corpus, que solo contiene el RGPD y la LOPDGDD. | — | Mismo dominio y muy plausible. Si responde, está tirando de conocimiento paramétrico. |
+| `e-035` | ¿Qué exige la normativa española sobre el uso de cookies y tecnologías de seguimiento en un sitio web? | Debe abstenerse: las cookies se regulan en la LSSI-CE, que no está en el corpus. | — |  |
+| `e-036` | ¿Qué plazo hay para interponer recurso contencioso-administrativo contra una resolución sancionadora de la AEPD? | Debe abstenerse: ese plazo está en la Ley de la Jurisdicción Contencioso-administrativa, que no está en el corpus. | — | Muy plausible porque el corpus sí habla de resoluciones de la AEPD. |
+| `e-037` | ¿Qué medidas de seguridad exigía el Real Decreto 1720/2007 para los ficheros de nivel alto? | Debe abstenerse: el reglamento de desarrollo de la LOPD de 1999 no está en el corpus. | — |  |
+| `e-038` | ¿Qué criterios aplica el Tribunal Supremo para valorar la proporcionalidad de una sanción de la AEPD? | Debe abstenerse: no hay jurisprudencia en el corpus. | — |  |
+| `e-039` | ¿Qué obligaciones de notificación de incidentes impone la Directiva NIS2 a las entidades esenciales? | Debe abstenerse: NIS2 no está en el corpus. | — | Especialmente tentadora porque también habla de notificar incidentes en 72 horas. |
+| `e-040` | ¿Cuánto recaudó la Agencia Española de Protección de Datos en multas durante el año 2025? | Debe abstenerse: el corpus contiene normas, no memorias ni estadísticas de la AEPD. | — |  |
+| `e-041` | ¿Qué requisitos fija el Esquema Nacional de Seguridad para los sistemas de categoría alta? | Debe abstenerse: el ENS no está en el corpus. | — |  |
+| `e-042` | ¿Cuántos días de vacaciones fija el convenio colectivo del sector del metal? | Debe abstenerse: los convenios colectivos quedan fuera del corpus. | — | Control negativo fácil: si esta falla, algo está muy roto. |
+| `e-043` | ¿Qué sanciones prevé el Reglamento de Servicios Digitales para las plataformas en línea de gran tamaño? | Debe abstenerse: el DSA no está en el corpus. | — |  |
+
+## trampa (7)
+
+| id | pregunta | respuesta esperada | fuente | notas |
+| --- | --- | --- | --- | --- |
+| `e-044` | ¿Cuál es la cuantía mínima de la multa por no notificar una brecha en el plazo del artículo 33? | Debe abstenerse o aclarar que no existe: el RGPD fija importes máximos, nunca mínimos. | — | Usa el vocabulario exacto del corpus y suena perfectamente respondible. Un sistema mediocre inventará una cifra con una cita bien formateada. |
+| `e-045` | ¿Cuántos delegados de protección de datos debe designar una empresa de 500 empleados? | Debe abstenerse: ni el RGPD ni la LOPDGDD fijan un número de delegados en función de la plantilla. | — | El umbral de 250 empleados del artículo 30.5 existe, pero es para el registro de actividades, no para el DPD. |
+| `e-046` | ¿Qué formato concreto debe tener el registro de actividades de tratamiento del artículo 30? | Debe abstenerse: el artículo 30 fija el contenido mínimo y exige forma escrita, incluida la electrónica, pero no impone un formato concreto. | — |  |
+| `e-047` | ¿Qué tasa debe abonar un ciudadano para presentar una reclamación ante la AEPD? | Debe abstenerse: el corpus no prevé ninguna tasa para reclamar. | — | La ley sí prohíbe exigir un canon al afectado por atender sus derechos (artículo 74), lo que hace la pregunta aún más tentadora. |
+| `e-048` | ¿Cuántos días concretos equivalen a «sin dilación indebida» en el artículo 34 del reglamento? | Debe abstenerse: el RGPD no cuantifica «sin dilación indebida» en el artículo 34; solo el artículo 33 fija un plazo, y es de 72 horas para la autoridad de control. | — |  |
+| `e-049` | ¿Qué porcentaje de las multas impuestas por la AEPD se destina a la formación de sus inspectores? | Debe abstenerse: el corpus no dice nada sobre el destino de la recaudación. | — |  |
+| `e-050` | ¿Qué altura mínima deben tener los carteles informativos de videovigilancia según el artículo 22? | Debe abstenerse: el artículo 22.4 exige un dispositivo informativo en lugar suficientemente visible y con un contenido mínimo, pero no fija dimensiones ni altura. | — | Una de las mejores del set: el artículo existe, habla de carteles, y no dice nada de alturas. |

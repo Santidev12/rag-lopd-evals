@@ -8,7 +8,9 @@ def test_defaults_apuntan_a_las_fuentes_correctas() -> None:
 
     # Cellar, no eur-lex.europa.eu: eur-lex bloquea a los clientes que no son navegador.
     assert "publications.europa.eu" in settings.cellar_base
-    assert settings.rgpd_celex.startswith("0"), "debe ser la versión consolidada, no el acto original"
+    assert settings.rgpd_celex.startswith("0"), (
+        "debe ser la versión consolidada, no el acto original"
+    )
     assert settings.boe_lopdgdd_id == "BOE-A-2018-16673"
 
 
