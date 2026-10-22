@@ -72,6 +72,12 @@ def _veredicto(obs: Observacion, juicio: Juicio | None) -> tuple[str, str]:
             return "ok", "Se calló, como debía"
         if juicio is not None and juicio.veredicto is Veredicto.INCORRECTA:
             return "falla", "Sobre-respuesta grave: afirma algo que la norma no sostiene"
+        if juicio is not None and juicio.veredicto is Veredicto.CORRECTA:
+            return (
+                "aviso",
+                "Contestó cuando debía callar, pero solo reproduce la norma: "
+                "cuenta como sobre-respuesta y el juez la da por correcta",
+            )
         return "falla", "Sobre-respuesta: contestó sin respuesta en el corpus"
     if obs.respuesta.se_abstiene:
         return "falla", "Abstención indebida: calló teniendo la respuesta"

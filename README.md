@@ -2,8 +2,10 @@
 
 **RAG sobre normativa española de protección de datos, con un set de evaluación de 50 preguntas.**
 
-> 🚧 En construcción. Las cifras marcadas como `—` se rellenan cuando el harness de evaluación las
-> produzca. Este README no publica ningún número que no venga de una ejecución real.
+📊 **[Informe de evaluación](docs/informe.html)**: las 50 preguntas con la respuesta del sistema,
+lo que acierta y lo que falla. Se abre en el navegador, sin servidor.
+
+> Este README no publica ningún número que no venga de una ejecución real.
 
 ---
 

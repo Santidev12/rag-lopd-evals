@@ -146,6 +146,19 @@ def test_un_contenido_incorrecto_o_parcial_se_marca() -> None:
     assert "Sobre-respuesta grave" in grave
 
 
+def test_contestar_sin_respuesta_pero_solo_reproduciendo_la_norma_es_un_aviso_y_no_un_fallo() -> (
+    None
+):
+    html = _html(
+        juicios={"e-004": _juicio("e-004", TipoPregunta.FUERA_DE_CORPUS, Veredicto.CORRECTA)}
+    )
+
+    assert "el juez la da por correcta" in html
+    assert 'class="q q-aviso" id="e-004"' in html
+    # Sigue contando en la cifra de sobre-respuesta: el informe no la esconde, la matiza.
+    assert "1/2" in html
+
+
 def test_lo_que_dice_el_modelo_se_escapa() -> None:
     observaciones, eval_set = _caso()
     observaciones[0] = _obs(
