@@ -2,7 +2,7 @@
 
 **RAG sobre normativa española de protección de datos, con un set de evaluación de 50 preguntas.**
 
-📊 **[Informe de evaluación](docs/informe.html)**: las 50 preguntas con la respuesta del sistema,
+📊 **[Informe de evaluación](https://santidev12.github.io/rag-lopd-evals/)**: las 50 preguntas con la respuesta del sistema,
 lo que acierta y lo que falla. Se abre en el navegador, sin servidor.
 
 > Este README no publica ningún número que no venga de una ejecución real.
