@@ -82,7 +82,7 @@ uv run rag-lopd eval tabla     # exporta docs/eval-candidatas.md para revisar
 | | |
 | --- | --- |
 | Coste medio por consulta | ≈ 0,0020 $ (Gemini 3.5 Flash-Lite, ~5.600 tokens de entrada) |
-| Latencia p50 / p95 (extremo a extremo) | 21,2 s / 41,8 s (50 consultas, una sola pasada, con Gemini 3.5 Flash-Lite; incluye embeber la consulta, buscar, generar y los reintentos) |
+| Latencia p50 / p95 (extremo a extremo) | 1,4 s / 10,4 s (50 consultas, Gemini 3.5 Flash-Lite, 22-oct-2026): recuperar 0,4 s / 0,7 s y generar 1,0 s / 9,8 s. **Una pasada del día anterior midió 21,2 s / 41,8 s** con el mismo modelo y prompt: la latencia depende del proveedor y varía mucho entre pasadas, y no he averiguado por qué. |
 | Modos de fallo conocidos | Las preguntas cruzadas son lo débil: 6/12 correctas. Tres se callan (en dos el artículo transversal que hace falta no llega a recuperarse; la tercera es un fallo de generación) y tres salen parciales (una por recuperación, una por no aplicar la regla al caso concreto y una, discutible, por omitir un dato que la referencia incluye y la pregunta no pide). Además, una factual (e-010) cita el art. 19 del RGPD habiendo recibido el artículo correcto de la LOPDGDD. |
 
 ---

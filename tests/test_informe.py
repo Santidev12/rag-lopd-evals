@@ -126,14 +126,14 @@ def test_sin_juicios_no_se_inventa_un_acierto() -> None:
     sin = _html()
     con = _html(
         juicios={"e-001": _juicio("e-001", TipoPregunta.FACTUAL, Veredicto.CORRECTA)},
-        nombre_juicios="x.juez-deepseek-v4-flash-v2.jsonl",
+        nombre_juicios="x.juez-deepseek-v4-flash-0731-j1.jsonl",
     )
 
     assert "Contestó (contenido sin juzgar)" in sin
     assert "Exactitud" not in sin
     assert "Contestó correctamente" in con
     assert "Exactitud" in con
-    assert "juez <code>deepseek-v4-flash</code>" in con
+    assert "juez <code>deepseek-v4-flash-0731</code> (rúbrica <code>j1</code>)" in con
 
 
 def test_un_contenido_incorrecto_o_parcial_se_marca() -> None:

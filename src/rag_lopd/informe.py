@@ -24,7 +24,7 @@ from rag_lopd.generacion.modelo import Tarifa
 from rag_lopd.retrieval.evaluacion import RecallMedido
 
 _NOMBRE_PASADA = re.compile(r"^(?P<modelo>.+)-prompt(?P<prompt>v\d+)-k(?P<k>\d+)-\d{8}-\d{6}")
-_NOMBRE_JUICIOS = re.compile(r"\.juez-(?P<juez>.+)-(?P<rubrica>v\d+)$")
+_NOMBRE_JUICIOS = re.compile(r"\.juez-(?P<juez>.+)-(?P<rubrica>[^-]+)$")
 
 _ETIQUETA_TIPO = {
     TipoPregunta.FACTUAL: "factual",
