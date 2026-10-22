@@ -88,4 +88,4 @@ def test_el_reparto_objetivo_suma_cincuenta() -> None:
 def test_la_desviacion_cuenta_lo_que_falta_por_aceptar() -> None:
     eval_set = EvalSet(version="v", preguntas=(Pregunta(**BASE | {"estado": Estado.ACEPTADA}),))
 
-    assert eval_set.desviacion_del_objetivo()[TipoPregunta.FACTUAL] == 14
+    assert eval_set.desviacion_del_objetivo()[TipoPregunta.FACTUAL] == 15

@@ -17,6 +17,7 @@ esperada.
 from __future__ import annotations
 
 import math
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -47,6 +48,18 @@ class Observacion(BaseModel):
     """Los artículos que se le dieron al modelo, en orden de recuperación."""
 
     respuesta: Respuesta
+
+    latencia_s: float | None = None
+    """Segundos de la consulta de extremo a extremo (recuperar + generar). `None` en las pasadas
+    guardadas antes de que se midiera."""
+
+    latencia_recuperacion_s: float | None = None
+    """Parte de `latencia_s` que se va en recuperar: embeber la consulta por la API, buscar y
+    armar los artículos. `None` si la pasada es anterior al desglose."""
+
+    latencia_generacion_s: float | None = None
+    """Parte de `latencia_s` que se va en el modelo generador, con sus reintentos. `None` si la
+    pasada es anterior al desglose."""
 
     @property
     def debe_abstenerse(self) -> bool:
@@ -87,22 +100,31 @@ def evaluar_generacion(
     k: int = 10,
     prompt: Prompt = PROMPT_POR_DEFECTO,
     al_terminar: Callable[[Observacion], None] | None = None,
+    reloj: Callable[[], float] = time.perf_counter,
 ) -> list[Observacion]:
     """Recupera, genera y registra, para las preguntas aceptadas, de una en una.
 
     `al_terminar` se llama con cada observación en cuanto está lista: quien lo pasa puede guardarla
     al momento, de modo que una caída a mitad de pasada no tire a la basura las respuestas ya
-    pagadas.
+    pagadas. `reloj` mide la latencia de cada consulta (embeber, buscar y generar, con sus
+    reintentos); se puede inyectar para probarlo sin esperar.
     """
     observaciones: list[Observacion] = []
     for pregunta in eval_set.aceptadas():
+        inicio = reloj()
         contextos = contextos_para(recuperador.buscar(pregunta.pregunta, k=k), indice)
+        tras_recuperar = reloj()
+        respuesta = responder(modelo, pregunta.pregunta, contextos, prompt)
+        fin = reloj()
         observacion = Observacion(
             pregunta_id=pregunta.id,
             tipo=pregunta.tipo,
             fuente=pregunta.fuente,
             contextos=tuple(c.id for c in contextos),
-            respuesta=responder(modelo, pregunta.pregunta, contextos, prompt),
+            respuesta=respuesta,
+            latencia_s=fin - inicio,
+            latencia_recuperacion_s=tras_recuperar - inicio,
+            latencia_generacion_s=fin - tras_recuperar,
         )
         observaciones.append(observacion)
         if al_terminar is not None:
@@ -120,6 +142,29 @@ def intervalo_wilson(exitos: int, total: int, *, z: float = 1.96) -> tuple[float
     centro = (p + z**2 / (2 * total)) / denominador
     margen = z * math.sqrt(p * (1 - p) / total + z**2 / (4 * total**2)) / denominador
     return (max(0.0, centro - margen), min(1.0, centro + margen))
+
+
+def percentil(valores: list[float], p: float) -> float:
+    """Percentil `p` (0-100) con interpolación lineal entre los dos valores vecinos, igual que el
+    método por defecto de numpy. Con pocos datos, el p95 es casi el máximo: se reporta junto al
+    número de consultas para que se sepa."""
+    if not valores:
+        raise ValueError("no hay valores de los que sacar un percentil")
+    ordenados = sorted(valores)
+    posicion = (len(ordenados) - 1) * p / 100
+    bajo = math.floor(posicion)
+    alto = min(bajo + 1, len(ordenados) - 1)
+    return ordenados[bajo] + (ordenados[alto] - ordenados[bajo]) * (posicion - bajo)
+
+
+@dataclass(frozen=True)
+class Latencia:
+    consultas: int
+    p50_s: float
+    p95_s: float
+
+    def __str__(self) -> str:
+        return f"p50 {self.p50_s:.2f} s · p95 {self.p95_s:.2f} s ({self.consultas} consultas)"
 
 
 @dataclass(frozen=True)
@@ -166,6 +211,13 @@ class Resumen:
 
     uso: Uso
 
+    latencia: Latencia | None = None
+    """De extremo a extremo, solo con las observaciones que la midieron. `None` si ninguna."""
+
+    latencia_recuperacion: Latencia | None = None
+    latencia_generacion: Latencia | None = None
+    """El desglose de `latencia`, solo con las observaciones que lo midieron."""
+
 
 def resumir(observaciones: list[Observacion]) -> Resumen:
     sin_respuesta = [o for o in observaciones if o.debe_abstenerse]
@@ -181,6 +233,13 @@ def resumir(observaciones: list[Observacion]) -> Resumen:
     uso = Uso()
     for o in observaciones:
         uso = uso + o.respuesta.uso
+
+    def latencia_de(tiempos: list[float]) -> Latencia | None:
+        if not tiempos:
+            return None
+        return Latencia(
+            consultas=len(tiempos), p50_s=percentil(tiempos, 50), p95_s=percentil(tiempos, 95)
+        )
 
     return Resumen(
         sobre_respuesta=Proporcion(
@@ -208,4 +267,15 @@ def resumir(observaciones: list[Observacion]) -> Resumen:
             1 for o in observaciones if o.respuesta.estado is Estado.SALIDA_INVALIDA
         ),
         uso=uso,
+        latencia=latencia_de([o.latencia_s for o in observaciones if o.latencia_s is not None]),
+        latencia_recuperacion=latencia_de(
+            [
+                o.latencia_recuperacion_s
+                for o in observaciones
+                if o.latencia_recuperacion_s is not None
+            ]
+        ),
+        latencia_generacion=latencia_de(
+            [o.latencia_generacion_s for o in observaciones if o.latencia_generacion_s is not None]
+        ),
     )

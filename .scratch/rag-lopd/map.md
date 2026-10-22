@@ -111,11 +111,14 @@ y los ADR, `/codebase-design` al fijar los límites de los módulos.
   Quedan 3 abstenciones: 2 correctas por retrieval (e-021, e-024) y 1 fallo real de generación
   (e-027). Abierto: un segundo modelo.
 - **Instrumentación de coste y latencia.** El coste ya sale de la ejecución: ≈ 0,0020 $ por
-  consulta con Gemini 3.5 Flash-Lite y prompt v2 (tokens reales × tarifa). Falta la latencia p50/p95.
-- **Forma del demo.** Qué ve un reclutador en los primeros diez segundos. Chat, informe de evaluación,
-  o las dos cosas.
-- **Despliegue.** HF Spaces + Qdrant es la apuesta, pero falta confirmar el flujo de indexación y los
-  secretos.
+  consulta con Gemini 3.5 Flash-Lite y prompt v2 (tokens reales × tarifa). Latencia de extremo a extremo (50 consultas, una pasada cada vez): el 21-oct-2026 midió p50 21,2 s · p95 41,8 s y el 22-oct-2026, con el mismo modelo y prompt, p50 1,4 s · p95 10,4 s. Desglose del 22-oct: recuperar p50 0,4 s / p95 0,7 s y generar p50 1,0 s / p95 9,8 s. En la pasada del 22-oct casi todo el tiempo es el modelo; no se sabe por qué varió tanto entre pasadas.
+- **Forma del demo.** Decidido el 21-oct-2026: informe de evaluación estático, no chat. Un chat en
+  vivo depende de claves y de un servidor, y su latencia varía mucho entre pasadas (p50 de 1,4 s a
+  21 s según el día). `rag-lopd informe`
+  genera un HTML autocontenido desde ficheros ya guardados (sin llamar a ningún modelo). Pendiente:
+  generarlo con la pasada real, versionarlo en `docs/informe.html` y publicarlo.
+- **Despliegue.** Con un informe estático basta GitHub Pages (sin servidor, sin claves): HF Spaces +
+  Qdrant queda para un chat futuro, fuera de v0.
 - **Ampliación a v1**: resoluciones de la AEPD y directrices del EDPB, con el muestreo acotado que
   exige su robots.txt.
 

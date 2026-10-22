@@ -62,11 +62,11 @@ SIN_RESPUESTA = {TipoPregunta.FUERA_DE_CORPUS, TipoPregunta.TRAMPA}
 #: Reparto objetivo de las 50 preguntas. El 20 % sin respuesta no es decorativo: con menos,
 #: la tasa de sobre-respuesta se calcula sobre tan pocos casos que no dice nada.
 REPARTO_OBJETIVO = {
-    TipoPregunta.FACTUAL: 15,
+    TipoPregunta.FACTUAL: 16,
     TipoPregunta.CRUZADA: 12,
     TipoPregunta.TEMPORAL: 6,
     TipoPregunta.FUERA_DE_CORPUS: 10,
-    TipoPregunta.TRAMPA: 7,
+    TipoPregunta.TRAMPA: 6,
 }
 
 _BINARIA = re.compile(

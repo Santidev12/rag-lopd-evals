@@ -133,6 +133,27 @@ def test_la_espera_crece_sin_retry_after_y_tras_el_ultimo_intento_falla() -> Non
 
 
 @respx.mock
+def test_reintenta_ante_un_tiempo_de_espera_agotado() -> None:
+    ruta = respx.post(ENDPOINT).mock(side_effect=[httpx.ReadTimeout("lento"), _ok()])
+    modelo = _modelo()
+
+    modelo.completar("s", "u")
+
+    assert ruta.call_count == 2
+    assert modelo.esperas == [2.0]  # type: ignore[attr-defined]
+
+
+@respx.mock
+def test_si_todos_los_intentos_agotan_el_tiempo_de_espera_falla() -> None:
+    ruta = respx.post(ENDPOINT).mock(side_effect=httpx.ReadTimeout("lento"))
+
+    with pytest.raises(httpx.ReadTimeout):
+        _modelo().completar("s", "u")
+
+    assert ruta.call_count == 5
+
+
+@respx.mock
 def test_un_error_del_cliente_no_se_reintenta() -> None:
     ruta = respx.post(ENDPOINT).mock(return_value=httpx.Response(400))
 

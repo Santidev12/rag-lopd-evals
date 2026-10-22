@@ -514,13 +514,13 @@ def extract_articles(xml_text: str):
 
             elif child.tag == "ARTICLE":
                 numero = child.get("IDENTIFIER")  # p.ej. "033"
-                titulo_num = text_of(child.find("TI.ART"))     # "Artículo 33"
-                titulo_txt = text_of(child.find("STI.ART"))    # título del artículo
+                titulo_num = text_of(child.find("TI.ART"))  # "Artículo 33"
+                titulo_txt = text_of(child.find("STI.ART"))  # título del artículo
 
                 apartados = []
                 for parag in child.findall("PARAG"):
-                    apt_num = text_of(parag.find("NO.PARAG"))   # "1.", "2."...
-                    apt_txt = text_of(parag.find("ALINEA"))     # texto completo del apartado
+                    apt_num = text_of(parag.find("NO.PARAG"))  # "1.", "2."...
+                    apt_txt = text_of(parag.find("ALINEA"))  # texto completo del apartado
                     apartados.append({"numero": apt_num, "texto": apt_txt})
 
                 # Algunos artículos no tienen PARAG (van directos a texto corrido);
@@ -528,14 +528,16 @@ def extract_articles(xml_text: str):
                 if not apartados:
                     apartados.append({"numero": "", "texto": text_of(child)})
 
-                articles.append({
-                    "numero": numero,
-                    "titulo_articulo": titulo_num,
-                    "titulo": titulo_txt,
-                    "capitulo": chapter,
-                    "seccion": section,
-                    "apartados": apartados,
-                })
+                articles.append(
+                    {
+                        "numero": numero,
+                        "titulo_articulo": titulo_num,
+                        "titulo": titulo_txt,
+                        "capitulo": chapter,
+                        "seccion": section,
+                        "apartados": apartados,
+                    }
+                )
             else:
                 # cualquier otro tag intermedio: seguimos bajando por si acaso
                 walk(child, chapter=chapter, section=section)
@@ -564,13 +566,15 @@ if __name__ == "__main__":
     chunks = []
     for a in articles:
         cuerpo = "\n".join(f"{ap['numero']} {ap['texto']}" for ap in a["apartados"])
-        chunks.append({
-            "id": f"rgpd-art-{int(a['numero'])}",
-            "titulo": f"{a['titulo_articulo']} — {a['titulo']}",
-            "capitulo": a["capitulo"],
-            "seccion": a["seccion"],
-            "texto": f"{a['titulo_articulo']}. {a['titulo']}\n\n{cuerpo}",
-        })
+        chunks.append(
+            {
+                "id": f"rgpd-art-{int(a['numero'])}",
+                "titulo": f"{a['titulo_articulo']} — {a['titulo']}",
+                "capitulo": a["capitulo"],
+                "seccion": a["seccion"],
+                "texto": f"{a['titulo_articulo']}. {a['titulo']}\n\n{cuerpo}",
+            }
+        )
 
     print()
     print(f"Chunks listos para indexar: {len(chunks)}")

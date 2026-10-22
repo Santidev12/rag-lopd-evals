@@ -468,6 +468,7 @@ Pensado para alguien que sabe programar pero no es experto en Python: usa solo `
 Descarga el índice y un bloque (artículo) concreto de una norma consolidada del BOE.
 Uso: python boe_lopdgdd.py
 """
+
 import xml.etree.ElementTree as ET
 import requests
 
@@ -483,7 +484,9 @@ resp = requests.get(
 resp.raise_for_status()  # lanza una excepción si el código HTTP no es 2xx
 indice = resp.json()
 
-bloques = indice["data"][0]["bloque"]  # data es una lista con un único dict que contiene la lista "bloque"
+bloques = indice["data"][0][
+    "bloque"
+]  # data es una lista con un único dict que contiene la lista "bloque"
 print(f"La norma tiene {len(bloques)} bloques.")
 
 # --- 2. Buscar el id de bloque del "Artículo 7" a partir del título (nunca lo construyáis a mano) ---

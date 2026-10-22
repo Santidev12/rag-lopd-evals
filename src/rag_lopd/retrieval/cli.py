@@ -8,6 +8,7 @@ motor — el contrato `Recuperador` hace el resto.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Annotated
 
@@ -22,7 +23,7 @@ from rag_lopd.retrieval.bm25 import RecuperadorBM25
 from rag_lopd.retrieval.corpus import cargar_unidades
 from rag_lopd.retrieval.denso import RecuperadorDenso
 from rag_lopd.retrieval.embeddings import MODELO, EmbebedorDeepInfra
-from rag_lopd.retrieval.evaluacion import Nivel, evaluar_recall
+from rag_lopd.retrieval.evaluacion import Nivel, RecallMedido, evaluar_recall
 
 _NIVELES: tuple[Nivel, ...] = ("apartado", "articulo")
 _MOTORES = ("bm25", "denso")
@@ -65,24 +66,31 @@ def indexar(
     typer.echo(f"-> {ruta_salida} ({vectores.shape[0]} vectores de dimensión {vectores.shape[1]})")
 
 
-def _evaluar_bm25(unidades: list[UnidadIndexable], eval_set: EvalSet, k: int) -> None:
+def _evaluar_bm25(
+    unidades: list[UnidadIndexable], eval_set: EvalSet, ks: list[int]
+) -> list[RecallMedido]:
+    medidos: list[RecallMedido] = []
     for con_ruta in (True, False):
         recuperador = RecuperadorBM25(unidades, con_ruta=con_ruta)
         etiqueta = "con ruta jerárquica" if con_ruta else "sin ruta jerárquica"
         for nivel in _NIVELES:
-            resultado = evaluar_recall(recuperador, eval_set, k=k, nivel=nivel)
-            typer.echo(
-                f"BM25 ({etiqueta}, nivel {nivel}) @k={k}: "
-                f"{resultado.aciertos}/{resultado.total} = {resultado.recall:.1%}"
-            )
-            if resultado.fallos:
-                typer.echo(f"  falladas: {', '.join(resultado.fallos)}")
+            for k in ks:
+                resultado = evaluar_recall(recuperador, eval_set, k=k, nivel=nivel)
+                medidos.append(RecallMedido.de("bm25", con_ruta, resultado))
+                typer.echo(
+                    f"BM25 ({etiqueta}, nivel {nivel}) @k={k}: "
+                    f"{resultado.aciertos}/{resultado.total} = {resultado.recall:.1%}"
+                )
+                if resultado.fallos:
+                    typer.echo(f"  falladas: {', '.join(resultado.fallos)}")
         typer.echo("")
+    return medidos
 
 
 def _evaluar_denso(
-    settings: Settings, unidades: list[UnidadIndexable], eval_set: EvalSet, k: int
-) -> None:
+    settings: Settings, unidades: list[UnidadIndexable], eval_set: EvalSet, ks: list[int]
+) -> list[RecallMedido]:
+    medidos: list[RecallMedido] = []
     with EmbebedorDeepInfra(settings) as embebedor:
         for con_ruta in (True, False):
             ruta_indice = indice_denso.ruta_indice(settings, con_ruta=con_ruta)
@@ -99,23 +107,34 @@ def _evaluar_denso(
             recuperador = RecuperadorDenso(unidades_indice, vectores, embebedor)
             etiqueta = "con ruta jerárquica" if con_ruta else "sin ruta jerárquica"
             for nivel in _NIVELES:
-                resultado = evaluar_recall(recuperador, eval_set, k=k, nivel=nivel)
-                typer.echo(
-                    f"Denso ({etiqueta}, nivel {nivel}) @k={k}: "
-                    f"{resultado.aciertos}/{resultado.total} = {resultado.recall:.1%}"
-                )
-                if resultado.fallos:
-                    typer.echo(f"  falladas: {', '.join(resultado.fallos)}")
+                for k in ks:
+                    resultado = evaluar_recall(recuperador, eval_set, k=k, nivel=nivel)
+                    medidos.append(RecallMedido.de("denso", con_ruta, resultado))
+                    typer.echo(
+                        f"Denso ({etiqueta}, nivel {nivel}) @k={k}: "
+                        f"{resultado.aciertos}/{resultado.total} = {resultado.recall:.1%}"
+                    )
+                    if resultado.fallos:
+                        typer.echo(f"  falladas: {', '.join(resultado.fallos)}")
             typer.echo("")
+    return medidos
 
 
 @app.command()
 def evaluar(
     eval_set_path: Annotated[Path, typer.Option("--eval-set")] = _EVAL_SET_POR_DEFECTO,
-    k: Annotated[int, typer.Option("--k", help="Cuántos resultados cuentan como top-k.")] = 10,
+    k: Annotated[
+        list[int] | None,
+        typer.Option("--k", help="Cuántos resultados cuentan como top-k. Repetible: --k 5 --k 20."),
+    ] = None,
     motor: Annotated[str, typer.Option("--motor", help="bm25 o denso.")] = "bm25",
+    guardar: Annotated[
+        Path | None,
+        typer.Option("--guardar", help="Guarda las cifras en este JSON, para `rag-lopd informe`."),
+    ] = None,
 ) -> None:
     """Recall@k sobre las preguntas factual y cruzada, a nivel apartado y a nivel artículo."""
+    ks = k or [10]
     if motor not in _MOTORES:
         typer.secho(
             f"motor desconocido: {motor!r}. Usa {' o '.join(_MOTORES)}.", fg=typer.colors.RED
@@ -131,9 +150,18 @@ def evaluar(
     typer.echo("")
 
     if motor == "bm25":
-        _evaluar_bm25(unidades, eval_set, k)
+        medidos = _evaluar_bm25(unidades, eval_set, ks)
     else:
-        _evaluar_denso(settings, unidades, eval_set, k)
+        medidos = _evaluar_denso(settings, unidades, eval_set, ks)
+
+    if guardar is not None:
+        guardar.parent.mkdir(parents=True, exist_ok=True)
+        guardar.write_text(
+            json.dumps([m.model_dump(mode="json") for m in medidos], ensure_ascii=False, indent=2)
+            + "\n",
+            encoding="utf-8",
+        )
+        typer.echo(f"Cifras guardadas en {guardar}")
 
 
 @app.command()

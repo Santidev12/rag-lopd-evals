@@ -17,6 +17,7 @@ from rag_lopd.generacion.evaluacion import (
     Proporcion,
     evaluar_generacion,
     intervalo_wilson,
+    percentil,
     realinear,
     resumir,
 )
@@ -513,6 +514,67 @@ def test_evaluar_generacion_recorre_las_aceptadas_y_avisa_de_cada_una() -> None:
     assert resumir(observaciones).sobre_respuesta == Proporcion(casos=1, exitos=1)
     assert len(modelo.usuarios) == 2
     assert set(modelo.sistemas) == {V2.sistema}
+
+
+def test_evaluar_generacion_mide_la_latencia_de_cada_consulta() -> None:
+    corpus = [_unidad("rgpd:art-33.1", "72 horas")]
+    eval_set = EvalSet(
+        version="test",
+        preguntas=(
+            _pregunta(
+                "f-1",
+                TipoPregunta.FACTUAL,
+                "En qué plazo debe notificarse una violación de seguridad",
+                ("rgpd:art-33.1",),
+            ),
+            _pregunta(
+                "f-2",
+                TipoPregunta.FACTUAL,
+                "Quién debe notificar una violación de seguridad a la autoridad",
+                ("rgpd:art-33.1",),
+            ),
+        ),
+    )
+    # Tres lecturas del reloj por pregunta (inicio, tras recuperar, fin): la primera consulta tarda
+    # 1,5 s (0,5 recuperando y 1 generando) y la segunda 3 s (1 y 2).
+    lecturas = iter([10.0, 10.5, 11.5, 20.0, 21.0, 23.0])
+
+    observaciones = evaluar_generacion(
+        _Modelo('{"sin_respuesta": true}'),
+        _RecuperadorFijo([_resultado("rgpd:art-33.1")]),
+        indexar_articulos(corpus),
+        eval_set,
+        reloj=lambda: next(lecturas),
+    )
+
+    assert [o.latencia_s for o in observaciones] == [1.5, 3.0]
+    assert [o.latencia_recuperacion_s for o in observaciones] == [0.5, 1.0]
+    assert [o.latencia_generacion_s for o in observaciones] == [1.0, 2.0]
+    resumen = resumir(observaciones)
+    assert resumen.latencia is not None
+    assert (resumen.latencia.consultas, resumen.latencia.p50_s) == (2, 2.25)
+    assert resumen.latencia_recuperacion is not None
+    assert resumen.latencia_recuperacion.p50_s == 0.75
+    assert resumen.latencia_generacion is not None
+    assert resumen.latencia_generacion.p50_s == 1.5
+
+
+def test_una_pasada_guardada_sin_latencia_se_resume_sin_inventarla() -> None:
+    sin_medir = _obs("f-1", TipoPregunta.FACTUAL, Estado.RESPONDE)
+
+    assert sin_medir.latencia_s is None
+    resumen = resumir([sin_medir])
+    assert resumen.latencia is None
+    assert resumen.latencia_recuperacion is None
+    assert resumen.latencia_generacion is None
+
+
+def test_percentil_interpola_y_rechaza_lo_vacio() -> None:
+    assert percentil([1.0, 2.0, 3.0, 4.0], 50) == 2.5
+    assert percentil([1.0, 2.0, 3.0, 4.0], 95) == pytest.approx(3.85)
+    assert percentil([7.0], 95) == 7.0
+    with pytest.raises(ValueError):
+        percentil([], 50)
 
 
 # --- realinear con el eval set --------------------------------------------------------------------
