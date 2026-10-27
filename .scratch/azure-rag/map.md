@@ -69,6 +69,26 @@ agente, `/research` para hechos externos, `/domain-modeling` para `CONTEXT.md` y
 
 <!-- una línea por ticket cerrado -->
 
+- [Azure AI Search: nivel gratuito, vectores propios y búsqueda híbrida](issues/01-azure-ai-search-nivel-gratuito-vectores-e-hibrido.md) —
+  verificado en el SDK oficial 12.0.0: vectores propios sin vectorizador (encaja con mantener BGE-M3),
+  híbrido en una llamada con peso ajustable, y `exhaustive=True` para medir lo que pierde HNSW. Sin
+  verificar: límites del nivel Free, cuota vectorial y si el ranker semántico está en Free.
+- [Modelos generadores en Azure](issues/02-modelos-generadores-en-azure.md) — candidatos OpenAI
+  (`gpt-4.1-mini` el más repetible; `gpt-5*` con razonamiento), de otra familia que el juez; DeepSeek de
+  Foundry excluido. **Todo precio y cuota sin verificar**; riesgo de cuota 0 en suscripción nueva.
+- [Microsoft Agent Framework](issues/03-microsoft-agent-framework.md) — GA 1.0 (abr-2026), pero con
+  deriva de API y paquetes beta: instalar solo `core` + `openai` + `azure-identity` con versiones
+  fijadas. Un agente con tres herramientas; memoria con `store=False`; trazas OpenTelemetry solo con
+  metadatos por defecto; FastAPI sin fricción. Sin probar contra Azure real.
+- [Despliegue en Azure con identidad gestionada](issues/04-despliegue-en-azure-con-identidad-gestionada.md) —
+  Container Apps (consumo, 0 réplicas mínimas), identidad con tres roles por recurso, imágenes desde
+  GitHub Actions a GHCR. **Riesgo:** el crédito caduca a los 30 días y pasar a pago elimina el límite de
+  gasto; los presupuestos solo avisan.
+- [Filtros de contenido y prompt injection](issues/05-filtros-de-contenido-y-prompt-shields.md) — Prompt
+  Shields solo devuelve `attackDetected` y no bloquea (verificado en la spec). Set adversarial en español
+  con variante en inglés, midiendo ASR y falsos positivos; con n = 10, 0/10 = IC 0–28 %. Propuesta de
+  estado `BLOQUEADO` y de no guardar el texto de las preguntas en las trazas.
+
 ## Not yet specified
 
 <!-- niebla: en alcance, pero aún no se puede formular como ticket -->
@@ -77,13 +97,17 @@ agente, `/research` para hechos externos, `/domain-modeling` para `CONTEXT.md` y
   rehacer la pasada de las 50 preguntas y comparar con Gemini. Depende del ticket del generador.
 - **API FastAPI y UI Streamlit.** El contrato de la API (¿qué devuelve: respuesta, citas, estado,
   trazas?) y qué ve alguien en los primeros diez segundos. Depende de qué retriever y generador queden.
-- **Despliegue, Key Vault e identidad gestionada.** Dónde corre el servicio, qué roles recibe su
-  identidad, cómo se apaga. Depende de la investigación de despliegue y de tener la cuenta.
-- **Diseño del agente.** Herramientas, orquestación, memoria de conversación y trazas. Depende de
-  la investigación de Agent Framework y de lo que mida el retrieval nuevo.
-- **Evals nuevos.** El mini eval multi-turno de la memoria y el set adversarial de prompt injection:
-  qué casos, quién los escribe, cómo se corrigen. Se escriben a mano, no se generan con un LLM.
-- **Política de abstención documentada** y la regla de qué guardan las trazas.
+- **Despliegue, Key Vault e identidad gestionada.** Con Container Apps como punto de partida: roles,
+  imágenes en GHCR, cómo se apaga y cómo se protege la API expuesta del gasto ajeno. Depende de la
+  decisión de presupuesto y de tener la cuenta.
+- **Diseño del agente.** Un agente con tres herramientas (buscar, abrir artículo, seguir remisión),
+  memoria y trazas. Falta fijar qué cambia respecto al RAG simple y cómo se mide en las cruzadas;
+  depende de lo que mida el retrieval nuevo y de qué cliente de modelo quede.
+- **Evals nuevos.** El mini eval multi-turno y el set adversarial (≈ 10 ataques en español, con alguna
+  variante en inglés, datos ficticios): qué casos, quién los escribe, cómo se corrigen. A mano, no con
+  un LLM.
+- **Política de abstención documentada** y la regla de qué guardan las trazas (no guardar el texto de
+  las preguntas). Incluye si entra el estado `BLOQUEADO`, que se decide en el ticket del generador.
 - **Informe y README v1:** cómo se enseñan los antes/después y qué se retira o se matiza de lo publicado.
 
 ## Out of scope

@@ -1,7 +1,7 @@
 # Azure AI Search: nivel gratuito, vectores propios y búsqueda híbrida
 
 Type: research
-Status: open
+Status: resolved (27-oct-2026)
 
 ## Question
 
@@ -22,3 +22,24 @@ Search **sin salir del nivel gratuito**, y qué se puede medir ahí? Datos a tra
 
 Entregable: un documento con lo anterior, cada dato con su fuente y marcado como **verificado** (leído
 en la fuente primaria) o **no verificado** (solo en un fragmento de búsqueda).
+
+## Answer
+
+**Verificado** (leyendo el paquete oficial `azure-search-documents` 12.0.0, publicado en PyPI el 1-abr-2026):
+- Los **vectores propios** se suben como campo `Collection(SINGLE)` con `vector_search_dimensions`, con
+  perfil HNSW o búsqueda exhaustiva, y se consultan con `VectorizedQuery` sin vectorizador del servicio.
+  Encaja con mantener BGE-M3 calculado fuera de Azure.
+- `exhaustive=True` permite medir cuánto recall se pierde por aproximar con HNSW frente a la búsqueda exacta.
+- El **híbrido** es `search_text` + `vector_queries` en la misma llamada, con `k`, peso del vector (1.0 por
+  defecto) y `debug="vector"` para ver las subpuntuaciones antes de fusionar con RRF.
+- Los analizadores `es.microsoft` y `es.lucene` existen. Autenticación por clave y por Entra ID.
+- Los vectores en bruto ocupan ≈ 2,84 MiB (728 × 1024 × 4 B): probablemente caben en el nivel gratuito.
+
+**No verificado:** los límites del nivel Free (50 MB y 3 índices solo aparecen en fragmentos), la cuota
+del índice vectorial, si el **ranker semántico** está en Free (los fragmentos se contradicen: uno dice que
+no, otro que hay 1.000 consultas gratis al mes), si un servicio Free puede ascender de nivel, la constante
+`k` de RRF, y el precio de Basic (≈ 73,73 USD/mes según terceros).
+
+**Informe completo:** rama `research/azure-ai-search-gratis` (de la que no se ha hecho PR), fichero `docs/research/azure-ai-search-gratis.md`.
+Cada dato del informe va marcado como verificado o no verificado, y termina con la lista de lo que hay
+que confirmar a mano.

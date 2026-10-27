@@ -1,7 +1,7 @@
 # Despliegue gratuito en Azure con identidad gestionada y Key Vault
 
 Type: research
-Status: open
+Status: resolved (27-oct-2026)
 
 ## Question
 
@@ -21,3 +21,31 @@ dejándola apagable, con secretos en Key Vault y permisos mínimos?
 
 Entregable: un documento con tabla comparativa y recomendación, cada dato con su fuente y marcado
 como **verificado** o **no verificado**.
+
+## Answer
+
+**Recomendación** (certeza media-alta en arquitectura, baja en costes): **Azure Container Apps, plan
+Consumption**, dos apps (`api` y `ui`) y mínimo de 0 réplicas.
+
+**Verificado** en el Markdown fuente de la documentación de Microsoft:
+- Cuota gratuita de Container Apps: 180.000 vCPU-s, 360.000 GiB-s y 2 M de peticiones al mes por
+  suscripción; con 0 réplicas no hay cargo de consumo.
+- Roles con su id: Key Vault Secrets User, Search Index Data Reader, Cognitive Services OpenAI User y
+  AcrPull. Propuesta: una identidad de usuario para la `api` con los tres primeros, cada uno en el ámbito
+  de su recurso; la `ui` no necesita ninguno. Con identidad gestionada, Search y el modelo no necesitan
+  secreto: el vault solo guarda claves de terceros (DeepSeek, y el embedder por API si se usa).
+- Imágenes: Azure Container Registry no tiene nivel gratuito y su compilación en la nube está pausada
+  para créditos gratuitos; se propone **construir en GitHub Actions y publicar en GHCR**.
+
+**Riesgo principal (verificado):** el crédito de la cuenta gratuita **caduca a los 30 días**; para seguir
+hay que pasar a pago por uso, y eso **elimina el límite de gasto**. Los presupuestos de Azure **solo
+avisan** (se evalúan cada 24 h): no paran nada. Choca con "solo gratis y crédito, con alerta de gasto".
+Además, una API con acceso externo permite que cualquiera gaste el crédito (opciones: acceso interno,
+restricciones de IP o autenticación integrada).
+
+**No verificado:** todos los precios, si una acción de presupuesto puede desactivar una revisión de
+Container Apps, y los detalles de la cuenta gratuita.
+
+**Informe completo:** rama `research/despliegue-azure-identidad` (de la que no se ha hecho PR), fichero `docs/research/despliegue-azure-identidad.md`.
+Cada dato del informe va marcado como verificado o no verificado, y termina con la lista de lo que hay
+que confirmar a mano.

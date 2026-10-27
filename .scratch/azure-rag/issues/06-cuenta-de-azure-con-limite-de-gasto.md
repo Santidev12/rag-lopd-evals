@@ -2,7 +2,7 @@
 
 Type: task
 Status: open
-Blocked by: 01, 02, 04
+Blocked by: 01, 02, 04, 10
 
 ## Question
 
@@ -17,6 +17,8 @@ Checklist (HITL: lo hace Santiago con una lista precisa, o con el agente si hay 
   investigaciones: disponibilidad del modelo y del nivel gratuito de AI Search).
 - Fijar un **presupuesto con alertas** (y límite de gasto si la suscripción lo permite).
 - Instalar y autenticar `az` en la máquina de Santiago.
+- Tras la primera llamada al modelo, comprobar en Cost Management que el crédito la cubre, y mirar la
+  **cuota real** de cada modelo candidato en la región elegida (puede ser 0).
 - Anotar dónde queda cada dato que los tickets siguientes necesitan (nombre del servicio, región,
   endpoints), **sin pegar claves en ningún fichero versionado**.
 
