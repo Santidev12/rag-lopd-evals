@@ -1,7 +1,7 @@
 # Confirmar a mano los datos críticos que no se pudieron verificar
 
 Type: task
-Status: open
+Status: claimed
 
 ## Question
 
