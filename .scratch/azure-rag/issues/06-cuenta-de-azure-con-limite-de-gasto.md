@@ -1,4 +1,4 @@
-# Cuenta de Azure con límite de gasto y alerta
+# Cuenta de Azure, presupuesto y alertas
 
 Type: task
 Status: open
@@ -13,8 +13,11 @@ saber qué hace falta aprovisionar y en qué orden.
 
 Checklist (HITL: lo hace Santiago con una lista precisa, o con el agente si hay `az` autenticado):
 
-- Crear la suscripción y un grupo de recursos para este proyecto (región decidida con las
-  investigaciones: disponibilidad del modelo y del nivel gratuito de AI Search).
+- Crear la suscripción y un grupo de recursos para este proyecto, en la región que decida el ticket de
+  presupuesto (**no Spain Central**, que no tiene los límites altos de AI Search).
+- Si el ticket de presupuesto decide usar modelos de Azure: **pasar a pago por uso** (la cuenta
+  gratuita tiene cuota 0), lo que quita el límite de gasto; las alertas se crean antes que cualquier
+  recurso.
 - Fijar un **presupuesto con alertas** (y límite de gasto si la suscripción lo permite).
 - Instalar y autenticar `az` en la máquina de Santiago.
 - Tras la primera llamada al modelo, comprobar en Cost Management que el crédito la cubre, y mirar la

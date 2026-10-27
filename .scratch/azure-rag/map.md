@@ -35,6 +35,8 @@ producen código real. Se trabaja en pareja y el porqué de cada decisión se ex
 **Decisiones de partida** (tomadas al trazar el mapa, el 27-oct-2026):
 - **Presupuesto:** solo niveles gratuitos y el crédito de una suscripción nueva, con alerta de gasto.
   Lo de pago se crea, se mide y se borra en la misma sesión. Sustituye al tope de 10 €/mes anterior.
+  **Revisada el 27-oct-2026:** la cuenta gratuita no da cuota de modelos, así que esta decisión se
+  replantea en el ticket de presupuesto.
 - **Alcance:** entran los cuatro horizontes (Azure AI Search, FastAPI + UI, seguridad y Responsible AI,
   agente). El agente va el último y depende de lo medido antes.
 - **Demo:** desplegada pero apagable. El informe estático sigue siendo el artefacto público permanente.
@@ -88,6 +90,11 @@ agente, `/research` para hechos externos, `/domain-modeling` para `CONTEXT.md` y
   Shields solo devuelve `attackDetected` y no bloquea (verificado en la spec). Set adversarial en español
   con variante en inglés, midiendo ASR y falsos positivos; con n = 10, 0/10 = IC 0–28 %. Propuesta de
   estado `BLOQUEADO` y de no guardar el texto de las preguntas en las trazas.
+- [Confirmar a mano los datos críticos](issues/11-confirmar-a-mano-los-datos-criticos.md) — **la cuenta
+  gratuita da cuota 0 en todos los modelos de Azure OpenAI**: usarlos obliga a pasar a pago por uso y eso
+  quita el límite de gasto. En AI Search Free (50 MB, 3 índices) no hay ranker semántico (exige Basic) ni
+  ascenso de nivel; `k` de RRF fijo en 60. Solo `gpt-4.1-mini` acepta `temperature` 0. Región: no Spain
+  Central.
 
 ## Not yet specified
 

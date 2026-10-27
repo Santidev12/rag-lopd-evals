@@ -1,7 +1,7 @@
 # Confirmar a mano los datos críticos que no se pudieron verificar
 
 Type: task
-Status: claimed
+Status: resolved (27-oct-2026)
 
 ## Question
 
@@ -44,3 +44,57 @@ real de cada modelo en la región elegida, si el filtro de contenido por defecto
 preguntas, y el arranque en frío de la UI.
 
 La respuesta recoge cada valor con su fecha y la URL, y marca si contradice lo que dijo la investigación.
+
+## Answer
+
+Valores leídos por Santiago en las páginas oficiales el **27-oct-2026**. Lo marcado *(sin verificar)* no
+se pudo leer o es deducción.
+
+### Lo que contradice a la investigación
+- **La cuenta gratuita no sirve para los modelos.** Con la oferta Free Trial, todos los modelos de Azure
+  OpenAI / Foundry tienen **cuota 0 TPM**. Hay que pasar a pago por uso para desbloquearla, y eso
+  **quita el límite de gasto**. El crédito que quede sigue disponible hasta completar los 30 días.
+  (Documentación antigua decía 1K TPM; los casos recientes coinciden en 0.)
+- **El ranker semántico no está en el nivel Free del servicio.** No se contradecían las fuentes: su "plan
+  gratuito" (tope de 1.000 consultas/mes) existe, pero el servicio tiene que ser **Basic o superior**.
+
+### Bloque C. Dinero
+- **Crédito:** 200 $ para gastar en los 30 días desde el alta. **Límite de gasto** activo por defecto e
+  igual al crédito; no se puede cambiar el importe, solo quitarlo.
+- **Al terminar:** a los 30 días o al agotar el crédito, lo que llegue antes, hay que pasar a pago por
+  uso (quitando el límite). Si no, la cuenta y los productos se desactivan.
+- **Exclusiones:** el crédito no cubre productos de terceros ni de Azure Marketplace.
+- **Container Apps:** cuota gratuita confirmada (180.000 vCPU-s, 360.000 GiB-s, 2 M de peticiones al
+  mes por suscripción). Precio por encima de la cuota *(sin verificar: la página lo carga con
+  JavaScript)*: ≈ 0,000024 $/vCPU-s activo y 0,40 $ por millón de peticiones.
+- **Key Vault Standard:** ≈ 0,03 $ por 10.000 operaciones *(sin verificar)*; despreciable a este volumen.
+
+### Bloque B. Modelos (Global Standard, USD por millón de tokens, entrada / salida)
+| Modelo | Entrada | Salida |
+| --- | --- | --- |
+| `gpt-4.1-mini` | 0,40 | 1,60 |
+| `gpt-5-mini` | 0,25 | 2,00 |
+| `gpt-5.4-mini` | 0,75 | 4,50 |
+| `gpt-5.4-nano` | 0,20 | 1,25 |
+
+- **Región y RGPD:** en Data Zone (UE), `gpt-5.4-mini` sale a 0,825–0,90 $ de entrada y 4,95–5,40 $ de
+  salida (≈ 10 % más).
+- **Acceso:** `gpt-5-mini` no requiere registro; `gpt-5.4` completo es de acceso limitado;
+  `gpt-5.4-mini` y `gpt-5.4-nano` *(sin confirmar: comprobar en el catálogo de Foundry al desplegar)*.
+- **Salida JSON estricta:** los cuatro la admiten.
+- **`temperature`:** los `gpt-5*` **no** la admiten (solo el valor por defecto, 1; tampoco `top_p`,
+  `logprobs` ni `max_tokens`). **`gpt-4.1-mini` es el único de los cuatro que acepta `temperature` 0.**
+
+### Bloque A. Azure AI Search (documentación actualizada el 17-ago-2026)
+- **Free:** 50 MB de almacenamiento sin posibilidad de escalar, 3 índices, 4096 dimensiones por campo
+  vectorial. La tabla no da tamaño de índice vectorial para Free (solo desde Basic: 5 GB).
+- **Región:** Spain Central **no** tiene los límites altos: usar otra región europea.
+- **Ascenso:** un servicio Free no puede pasar a pago; hay que crear otro. Solo se cambia entre Basic y
+  Standard, y solo hacia arriba.
+- **RRF:** `k` es una constante fija de 60, **no configurable**. Se puede dar **peso a las consultas
+  vectoriales** desde la API 2024-05-01-preview; no hay parámetro de peso para el texto (favorecer el
+  texto sería bajar el peso del vector por debajo de 1: *deducción, sin verificar*).
+
+### Lo que no se pudo confirmar sin cuenta
+La cuota real por modelo y región, si el filtro por defecto bloquea alguna de las 50 preguntas, y el
+arranque en frío de la UI. Se miran en el ticket de la cuenta de Azure.
