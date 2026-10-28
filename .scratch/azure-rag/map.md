@@ -100,13 +100,16 @@ agente, `/research` para hechos externos, `/domain-modeling` para `CONTEXT.md` y
   externo o autenticada; la tarjeta con límite no se adopta. AI Search en Free (**sin ranker semántico**),
   modelo en **Data Zone UE**, región europea no Spain Central, y el grupo de recursos se borra al
   terminar cada fase.
+- [Generador en Azure: qué modelo y cómo se rehace la línea base](issues/09-generador-en-azure-y-linea-base.md) —
+  **`gpt-4.1-mini`** en Data Zone UE (el único con `temperature` 0 y sin razonamiento). Cambia solo el
+  modelo: mismo prompt v2, JSON simple, mismo juez `j1` y mismo recuperador local. **Tres pasadas**. Un
+  bloqueo del filtro es el estado nuevo `BLOQUEADO`: cuenta como callarse y se desglosa. Conclusión por
+  defecto: "sin diferencia demostrable" si los intervalos se solapan.
 
 ## Not yet specified
 
 <!-- niebla: en alcance, pero aún no se puede formular como ticket -->
 
-- **Generación en Azure, tras elegir modelo.** Implementar el cliente (como `ModeloDeLenguaje`),
-  rehacer la pasada de las 50 preguntas y comparar con Gemini. Depende del ticket del generador.
 - **API FastAPI y UI Streamlit.** El contrato de la API (¿qué devuelve: respuesta, citas, estado,
   trazas?) y qué ve alguien en los primeros diez segundos. Depende de qué retriever y generador queden.
 - **Despliegue, Key Vault e identidad gestionada.** Con Container Apps como punto de partida: roles,
@@ -119,7 +122,7 @@ agente, `/research` para hechos externos, `/domain-modeling` para `CONTEXT.md` y
   variante en inglés, datos ficticios): qué casos, quién los escribe, cómo se corrigen. A mano, no con
   un LLM.
 - **Política de abstención documentada** y la regla de qué guardan las trazas (no guardar el texto de
-  las preguntas). Incluye si entra el estado `BLOQUEADO`, que se decide en el ticket del generador.
+  las preguntas). El estado `BLOQUEADO` ya está decidido (ticket del generador); falta escribir la política.
 - **Informe y README v1:** cómo se enseñan los antes/después y qué se retira o se matiza de lo publicado.
 
 ## Out of scope
