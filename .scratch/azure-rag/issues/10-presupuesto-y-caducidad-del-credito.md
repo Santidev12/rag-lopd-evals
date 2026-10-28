@@ -1,7 +1,7 @@
 # Presupuesto: sin cuota de modelos no hay Azure OpenAI gratis, y pagar quita el límite de gasto
 
 Type: grilling
-Status: open
+Status: claimed
 
 ## Question
 
