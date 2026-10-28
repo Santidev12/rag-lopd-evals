@@ -1,7 +1,7 @@
 # Generador en Azure: qué modelo y cómo se rehace la línea base
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: 02, 11, 10
 
 ## Question
