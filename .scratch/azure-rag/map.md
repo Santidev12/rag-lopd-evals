@@ -105,6 +105,11 @@ agente, `/research` para hechos externos, `/domain-modeling` para `CONTEXT.md` y
   modelo: mismo prompt v2, JSON simple, mismo juez `j1` y mismo recuperador local. **Tres pasadas**. Un
   bloqueo del filtro es el estado nuevo `BLOQUEADO`: cuenta como callarse y se desglosa. Conclusión por
   defecto: "sin diferencia demostrable" si los intervalos se solapan.
+- [Diseño del experimento de retrieval antes/después](issues/07-experimento-de-retrieval-antes-y-despues.md) —
+  cinco configuraciones (local, Azure vectorial HNSW y exacto, BM25 en Azure, híbrido) sobre las 28
+  preguntas. **Regla fijada de antemano:** mejora = +2 netas en @10 sin pérdida neta en @5/@20; si no,
+  "sin diferencia demostrable". Con n = 28 la significación no es alcanzable en @10 (p ≈ 0,25 en el mejor
+  caso). **v1 va sobre Azure híbrido salvo que empeore.**
 
 ## Not yet specified
 
