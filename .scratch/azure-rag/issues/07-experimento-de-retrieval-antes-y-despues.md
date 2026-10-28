@@ -1,7 +1,7 @@
 # Diseño del experimento de retrieval antes/después
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: 01, 11, 10
 
 ## Question
