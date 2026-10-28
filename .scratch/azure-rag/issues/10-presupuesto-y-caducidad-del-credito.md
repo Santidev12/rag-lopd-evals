@@ -1,7 +1,7 @@
 # Presupuesto: sin cuota de modelos no hay Azure OpenAI gratis, y pagar quita el límite de gasto
 
 Type: grilling
-Status: claimed
+Status: resolved (28-oct-2026)
 
 ## Question
 
@@ -36,3 +36,36 @@ Decidir:
 
 Entrevista con `/grilling`. Resultado: la decisión de presupuesto, el tope, los mecanismos de contención
 y la región, que consumirá el ticket de la cuenta de Azure.
+
+## Answer
+
+Decidido con Santiago el 28-oct-2026. **Se acepta el pago por uso en Azure, con tope y contención.**
+
+### Decisiones
+- **Tope de bolsillo: 25 € para todo el proyecto en Azure.** Azure no lo hace cumplir (sin límite de
+  gasto): lo garantizan las contenciones de abajo y la atención.
+- **Se acepta el pago por uso** (hace falta tarjeta) y el generador **se queda en Azure**; no se revierte a
+  Gemini. El crédito de 200 $ sigue disponible hasta completar los 30 días desde el alta, así que el
+  trabajo se concentra en esa ventana y el grupo de recursos se **borra al terminar cada fase**.
+- **Contención del gasto:**
+  - **Alertas de presupuesto a 5, 10 y 20 €.** Solo avisan y se evalúan cada 24 h.
+  - **Cuota baja de TPM** en el despliegue del modelo (gratis): es el único tope automático. Orden de
+    magnitud *(cálculo propio, sin verificar la relación exacta cuota-TPM)*: con 20.000 TPM y
+    `gpt-4.1-mini`, como máximo ≈ 0,5 $ por hora de uso continuo.
+  - **La API sin acceso externo, o autenticada**, para que un tercero no gaste tokens a tu cuenta. Cuál de
+    las dos se decide en el ticket de despliegue.
+  - *No adoptada:* tarjeta virtual con límite bajo, que sería el único tope duro fuera de Azure. El
+    riesgo residual es un error propio entre dos alertas.
+- **Ranker semántico: fuera del experimento principal.** Exige AI Search Basic (≈ 73,74 $/mes, tercero,
+  sin verificar), casi el triple del tope. Queda como ampliación opcional al final, solo si sobra
+  presupuesto y se confirma si Basic se factura por horas. **AI Search se usa en el nivel Free.**
+- **Datos: Data Zone UE** para el modelo (≈ 10 % más; el precio de `gpt-4.1-mini` en Data Zone y su
+  disponibilidad en la región elegida **no están verificados**). Coherente con un proyecto de protección
+  de datos: el procesamiento se queda en la UE.
+- **Región de AI Search y Container Apps:** una región europea con los límites altos, **no Spain
+  Central**; la concreta se fija en el ticket de la cuenta con la disponibilidad real.
+
+### Cifras de apoyo (precios confirmados el 27-oct-2026)
+Una pasada de 50 preguntas (≈ 280.000 tokens de entrada, 5.500 de salida): `gpt-4.1-mini` ≈ 0,12 $,
+`gpt-5-mini` ≈ 0,08 $, `gpt-5.4-nano` ≈ 0,06 $ y `gpt-5.4-mini` ≈ 0,24 $ (+ ≈ 10 % en Data Zone), sin
+contar los tokens de razonamiento de los `gpt-5*`. Lo esperable queda muy por debajo del tope.

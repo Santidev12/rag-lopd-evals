@@ -35,8 +35,8 @@ producen código real. Se trabaja en pareja y el porqué de cada decisión se ex
 **Decisiones de partida** (tomadas al trazar el mapa, el 27-oct-2026):
 - **Presupuesto:** solo niveles gratuitos y el crédito de una suscripción nueva, con alerta de gasto.
   Lo de pago se crea, se mide y se borra en la misma sesión. Sustituye al tope de 10 €/mes anterior.
-  **Revisada el 27-oct-2026:** la cuenta gratuita no da cuota de modelos, así que esta decisión se
-  replantea en el ticket de presupuesto.
+  **Revisada el 28-oct-2026:** la cuenta gratuita no da cuota de modelos. Se acepta el pago por uso con
+  tope de 25 € y contención (ver el ticket de presupuesto).
 - **Alcance:** entran los cuatro horizontes (Azure AI Search, FastAPI + UI, seguridad y Responsible AI,
   agente). El agente va el último y depende de lo medido antes.
 - **Demo:** desplegada pero apagable. El informe estático sigue siendo el artefacto público permanente.
@@ -95,6 +95,11 @@ agente, `/research` para hechos externos, `/domain-modeling` para `CONTEXT.md` y
   quita el límite de gasto. En AI Search Free (50 MB, 3 índices) no hay ranker semántico (exige Basic) ni
   ascenso de nivel; `k` de RRF fijo en 60. Solo `gpt-4.1-mini` acepta `temperature` 0. Región: no Spain
   Central.
+- [Presupuesto: sin cuota de modelos no hay Azure OpenAI gratis](issues/10-presupuesto-y-caducidad-del-credito.md) —
+  se acepta el pago por uso con **tope de 25 €**, alertas a 5/10/20 €, cuota baja de TPM y API sin acceso
+  externo o autenticada; la tarjeta con límite no se adopta. AI Search en Free (**sin ranker semántico**),
+  modelo en **Data Zone UE**, región europea no Spain Central, y el grupo de recursos se borra al
+  terminar cada fase.
 
 ## Not yet specified
 
@@ -105,8 +110,8 @@ agente, `/research` para hechos externos, `/domain-modeling` para `CONTEXT.md` y
 - **API FastAPI y UI Streamlit.** El contrato de la API (¿qué devuelve: respuesta, citas, estado,
   trazas?) y qué ve alguien en los primeros diez segundos. Depende de qué retriever y generador queden.
 - **Despliegue, Key Vault e identidad gestionada.** Con Container Apps como punto de partida: roles,
-  imágenes en GHCR, cómo se apaga y cómo se protege la API expuesta del gasto ajeno. Depende de la
-  decisión de presupuesto y de tener la cuenta.
+  imágenes en GHCR, cómo se apaga, y si la API va sin acceso externo o con autenticación (ya decidido que una de las
+  dos). Depende de tener la cuenta.
 - **Diseño del agente.** Un agente con tres herramientas (buscar, abrir artículo, seguir remisión),
   memoria y trazas. Falta fijar qué cambia respecto al RAG simple y cómo se mide en las cruzadas;
   depende de lo que mida el retrieval nuevo y de qué cliente de modelo quede.

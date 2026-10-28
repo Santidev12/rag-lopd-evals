@@ -21,6 +21,8 @@ Con las opciones reales que traiga la investigación (cuota, coste, familia, for
 - Esto estrecha mucho la elección: para repetir pasadas, `gpt-4.1-mini` es el candidato natural. Queda
   decidir si se acepta o si el trabajo de reproducibilidad justifica otro, y el despliegue (Global
   Standard frente a Data Zone UE, ≈ 10 % más).
+- **Ya decidido en el ticket de presupuesto:** el modelo se despliega en **Data Zone UE** y con una cuota
+  baja de TPM. Falta verificar el precio de `gpt-4.1-mini` en Data Zone y su disponibilidad en la región.
 - ¿Cuántas pasadas? Con una sola, la latencia ya demostró variar de 1,4 s a 21,2 s entre días.
 - Cómo se presenta el "antes" (Gemini) y el "después" sin que parezca que uno es mejor por azar con n
   pequeño.
