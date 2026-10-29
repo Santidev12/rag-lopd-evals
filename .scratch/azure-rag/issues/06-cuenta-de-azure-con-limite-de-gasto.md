@@ -1,7 +1,7 @@
 # Cuenta de Azure, presupuesto y alertas
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: 01, 02, 04, 10
 
 Nota: **crear la cuenta arranca la ventana de 30 días del crédito.** Se hace al empezar este ticket,
