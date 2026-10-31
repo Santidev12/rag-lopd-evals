@@ -54,3 +54,11 @@ Pendiente, y por qué no se cierra:
   que se interpreta como sin gasto todavía, no como un precio. Falta el **nombre exacto del modelo**
   (`gpt-4.1-mini` frente a `gpt-4o-mini`), su **precio** y su **cuota real** en la región elegida.
 - Nombre de la suscripción (`az account show --query name`), sin identificadores.
+
+### Actualización (31-oct-2026): región cambiada a West Europe
+
+Santiago ha creado "uno nuevo en **West Europe**" (región europea, que resuelve el conflicto con Data Zone
+UE). **Sin confirmar qué se creó** (¿grupo de recursos, recurso de Azure OpenAI/Foundry?), si el de East US
+sigue existiendo, ni la disponibilidad de `gpt-4.1-mini` con despliegue **Data Zone (UE)** en West Europe.
+Siguen sin recibirse: nombre exacto del modelo, precio, cuota (TPM), umbrales del presupuesto y nombre de
+la suscripción.
