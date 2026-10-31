@@ -62,3 +62,7 @@ UE). **Sin confirmar qué se creó** (¿grupo de recursos, recurso de Azure Open
 sigue existiendo, ni la disponibilidad de `gpt-4.1-mini` con despliegue **Data Zone (UE)** en West Europe.
 Siguen sin recibirse: nombre exacto del modelo, precio, cuota (TPM), umbrales del presupuesto y nombre de
 la suscripción.
+
+Confirmado por Santiago: lo creado en West Europe es el **grupo de recursos** (sin recursos de modelo todavía).
+Siguen pendientes la disponibilidad de `gpt-4.1-mini` con Data Zone (UE) en West Europe, su cuota y precio,
+el estado del grupo de East US, los umbrales del presupuesto y el nombre de la suscripción.
