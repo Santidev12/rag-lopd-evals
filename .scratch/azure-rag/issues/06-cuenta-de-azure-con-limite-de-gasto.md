@@ -66,3 +66,15 @@ la suscripción.
 Confirmado por Santiago: lo creado en West Europe es el **grupo de recursos** (sin recursos de modelo todavía).
 Siguen pendientes la disponibilidad de `gpt-4.1-mini` con Data Zone (UE) en West Europe, su cuota y precio,
 el estado del grupo de East US, los umbrales del presupuesto y el nombre de la suscripción.
+
+### Disponibilidad confirmada en West Europe (31-oct-2026, salida de `az cognitiveservices model list`)
+
+- **Suscripción:** "Azure subscription 1 - santiago" (autenticado con `az`; funciona).
+- **`gpt-4.1-mini`, versión `2025-04-14`, disponible en `westeurope`** con los tipos de despliegue `Standard`,
+  `GlobalStandard`, **`DataZoneStandard`**, `DeveloperTier`, `GlobalProvisionedManaged`,
+  `DataZoneProvisionedManaged`, `GlobalBatch` y `DataZoneBatch`. La salida trae la entrada duplicada con el
+  mismo contenido.
+- Que `DataZoneStandard` en `westeurope` sea la zona **UE** es de memoria y se confirma al desplegar (el
+  portal indica la zona).
+- Pendiente: **cuota** (TPM) de ese tipo de despliegue, **precio** en Data Zone UE, estado del grupo de East
+  US y umbrales del presupuesto.
