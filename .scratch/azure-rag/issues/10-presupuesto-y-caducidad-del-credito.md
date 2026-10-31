@@ -69,3 +69,9 @@ Decidido con Santiago el 28-oct-2026. **Se acepta el pago por uso en Azure, con 
 Una pasada de 50 preguntas (≈ 280.000 tokens de entrada, 5.500 de salida): `gpt-4.1-mini` ≈ 0,12 $,
 `gpt-5-mini` ≈ 0,08 $, `gpt-5.4-nano` ≈ 0,06 $ y `gpt-5.4-mini` ≈ 0,24 $ (+ ≈ 10 % en Data Zone), sin
 contar los tokens de razonamiento de los `gpt-5*`. Lo esperable queda muy por debajo del tope.
+
+### Enmienda (31-oct-2026)
+**Datos:** la decisión de **Data Zone UE** se sustituye por **`Standard` regional en West Europe**, porque
+`DataZoneStandard` tiene cuota 0 en la suscripción nueva (ver el ticket de la cuenta). La intención se
+mantiene: el procesamiento se queda en Europa. La región queda fijada en **West Europe**. El resto de la
+decisión (tope de 25 €, contención, AI Search en Free) no cambia.

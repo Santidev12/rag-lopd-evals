@@ -1,7 +1,7 @@
 # Cuenta de Azure, presupuesto y alertas
 
 Type: task
-Status: claimed
+Status: resolved (31-oct-2026)
 Blocked by: 01, 02, 04, 10
 
 Nota: **crear la cuenta arranca la ventana de 30 días del crédito.** Se hace al empezar este ticket,
@@ -78,3 +78,42 @@ el estado del grupo de East US, los umbrales del presupuesto y el nombre de la s
   portal indica la zona).
 - Pendiente: **cuota** (TPM) de ese tipo de despliegue, **precio** en Data Zone UE, estado del grupo de East
   US y umbrales del presupuesto.
+
+## Answer
+
+Hecho por Santiago el 31-oct-2026; salidas leídas por el agente.
+
+- **Cuenta:** alta el **31-oct-2026**; el crédito de 200 $ **vence el 30-nov-2026**. Suscripción
+  "Azure subscription 1 - santiago", ya **en pago por uso** (límite de gasto quitado; el crédito restante
+  sigue hasta el 30-nov). **Presupuesto creado**; los umbrales exactos **no están confirmados**.
+- **Región: West Europe** (europea). Santiago había creado primero algo en East US y lo cambió; en West
+  Europe existe un **grupo de recursos** (sin recursos de modelo). **Estado del grupo de East US: sin
+  confirmar** (hay que vaciarlo o borrarlo).
+- `az` **2.91.0** instalado y autenticado.
+- **`gpt-4.1-mini`, versión `2025-04-14`, disponible en `westeurope`**, pero con esta **cuota** (`limit`,
+  unidad sin mostrar; probablemente miles de TPM, de memoria):
+
+| Tipo de despliegue | Cuota |
+| --- | --- |
+| **`DataZoneStandard`** | **0** |
+| `Standard` (regional) | 200 |
+| `GlobalStandard` | 200 |
+| `GlobalBatch` / `DataZoneBatch` | 50.000 |
+
+### Decisión: Standard regional en West Europe
+Data Zone Standard tiene **cuota 0** en una suscripción nueva: no se puede desplegar. Se usa **`Standard`
+regional en West Europe** (cuota 200, de sobra para la cuota baja de ≈ 20.000 TPM). Cumple la intención de
+la decisión de Data Zone UE (el procesamiento se queda en Europa; que el regional lo mantenga **dentro de
+la región** es de memoria). **Enmienda** a los tickets de presupuesto y del generador.
+
+### Sin verificar / pendiente
+- **Precio** de `gpt-4.1-mini` en `Standard` regional (se verifica al desplegar y en Cost Management).
+- La **unidad** del límite de cuota, y que regional mantenga el procesamiento en la región.
+- Si Data Zone se pudiera pedir con un aumento de cuota (descartado por calendario).
+- Umbrales del presupuesto y estado del grupo de East US: se comprueban **antes de desplegar** (ticket del
+  cliente de Azure OpenAI).
+
+### Cómo releer la cuota (PowerShell 5.1; los paréntesis son necesarios)
+```powershell
+(az cognitiveservices usage list --location westeurope -o json | ConvertFrom-Json) | Where-Object { $_.name.value -like "*4.1-mini*" } | Select-Object currentValue, limit, @{n='nombre';e={$_.name.value}} | Format-Table -AutoSize
+```

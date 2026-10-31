@@ -70,3 +70,8 @@ intervalos se solapan, que con n = 50 será lo habitual. El "antes" es Gemini 3.
   subir la cuota temporalmente para las pasadas, o medir la latencia sin estrangular.
 - **Sin verificar:** el precio de `gpt-4.1-mini` en Data Zone UE y su disponibilidad en la región elegida.
   Se comprueban al crear la cuenta.
+
+### Enmienda (31-oct-2026)
+La cuota de `DataZoneStandard` es **0** en West Europe (ver el ticket de la cuenta). El modelo se despliega
+en **`Standard` regional de West Europe**; el resto de la decisión (modelo, protocolo, tres pasadas,
+`BLOQUEADO`) no cambia. El precio de `Standard` regional está por verificar.

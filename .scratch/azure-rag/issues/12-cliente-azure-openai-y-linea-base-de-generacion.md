@@ -2,17 +2,17 @@
 
 Type: task
 Status: open
-Blocked by: 06
+Blocked by: 06 (resuelto)
 
 ## Question
 
 Implementar la decisión del ticket del generador y medirla:
 
 - Un cliente de Azure OpenAI que cumpla el contrato `ModeloDeLenguaje` (`completar(sistema, usuario)`),
-  con `gpt-4.1-mini` en Data Zone UE, `temperature` 0 y JSON simple, sin tocar el prompt v2. Decidir
+  con `gpt-4.1-mini` en **`Standard` regional de West Europe** (Data Zone tiene cuota 0), `temperature` 0 y JSON simple, sin tocar el prompt v2. Decidir
   dentro del ticket cómo se autentica en local (Entra ID con `DefaultAzureCredential` o clave en `.env`)
   sin dejar claves en el repositorio.
-- Su tarifa explícita en `buscar_tarifa` (precio de Data Zone UE verificado en la cuenta, no adivinado).
+- Su tarifa explícita en `buscar_tarifa` (precio de `Standard` regional verificado, no adivinado).
 - El **estado `BLOQUEADO`**: un bloqueo del filtro de contenido (el 400 o el `finish_reason` de filtro,
   formas exactas por verificar con una llamada real) se registra como `BLOQUEADO`, cuenta como callarse
   y se desglosa en el resumen. Con tests sin red, como el resto del proyecto.
@@ -25,3 +25,12 @@ Implementar la decisión del ticket del generador y medirla:
 
 Skills: `/tdd`, `/codebase-design`. Resultado: código en el repo y la tabla medida, con la lectura
 honesta del resultado.
+
+## Antes de desplegar nada (precondiciones, del ticket de la cuenta)
+
+1. **Confirmar los umbrales del presupuesto** (20 %, 40 % y 80 % de 25 €, más la previsión) y que los avisos
+   llegan al correo. Es la única protección de gasto que no actúa sola.
+2. **Vaciar o borrar el grupo de East US**, si sigue existiendo.
+3. Desplegar con `Standard` regional en `westeurope`, una **capacidad baja** (≈ 20 en miles de TPM, unidad
+   de memoria) y **verificar el precio** en la página de precios y en Cost Management tras la primera
+   llamada. Cuota actual: 200.

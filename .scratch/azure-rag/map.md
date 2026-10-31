@@ -98,10 +98,10 @@ agente, `/research` para hechos externos, `/domain-modeling` para `CONTEXT.md` y
 - [Presupuesto: sin cuota de modelos no hay Azure OpenAI gratis](issues/10-presupuesto-y-caducidad-del-credito.md) —
   se acepta el pago por uso con **tope de 25 €**, alertas a 5/10/20 €, cuota baja de TPM y API sin acceso
   externo o autenticada; la tarjeta con límite no se adopta. AI Search en Free (**sin ranker semántico**),
-  modelo en **Data Zone UE**, región europea no Spain Central, y el grupo de recursos se borra al
+  modelo en **Data Zone UE** *(enmendado el 31-oct: `Standard` regional en West Europe, porque Data Zone tiene cuota 0)*, región europea no Spain Central, y el grupo de recursos se borra al
   terminar cada fase.
 - [Generador en Azure: qué modelo y cómo se rehace la línea base](issues/09-generador-en-azure-y-linea-base.md) —
-  **`gpt-4.1-mini`** en Data Zone UE (el único con `temperature` 0 y sin razonamiento). Cambia solo el
+  **`gpt-4.1-mini`** en `Standard` regional de West Europe (el único con `temperature` 0 y sin razonamiento). Cambia solo el
   modelo: mismo prompt v2, JSON simple, mismo juez `j1` y mismo recuperador local. **Tres pasadas**. Un
   bloqueo del filtro es el estado nuevo `BLOQUEADO`: cuenta como callarse y se desglosa. Conclusión por
   defecto: "sin diferencia demostrable" si los intervalos se solapan.
@@ -110,6 +110,10 @@ agente, `/research` para hechos externos, `/domain-modeling` para `CONTEXT.md` y
   preguntas. **Regla fijada de antemano:** mejora = +2 netas en @10 sin pérdida neta en @5/@20; si no,
   "sin diferencia demostrable". Con n = 28 la significación no es alcanzable en @10 (p ≈ 0,25 en el mejor
   caso). **v1 va sobre Azure híbrido salvo que empeore.**
+- [Cuenta de Azure, presupuesto y alertas](issues/06-cuenta-de-azure-con-limite-de-gasto.md) — alta el
+  31-oct-2026, **crédito hasta el 30-nov**, pago por uso activo y presupuesto creado (umbrales por
+  confirmar). Región **West Europe**. `gpt-4.1-mini` está disponible, pero **`DataZoneStandard` tiene cuota
+  0**: se despliega en **`Standard` regional** (cuota 200). Precio por verificar al desplegar.
 
 ## Not yet specified
 
