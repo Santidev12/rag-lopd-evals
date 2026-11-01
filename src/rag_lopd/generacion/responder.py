@@ -1,7 +1,9 @@
 """Pregunta + artículos recuperados -> `Respuesta`: la política de abstención, ejecutada.
 
-Tres controles, en este orden, y los tres son medibles por separado:
+Cuatro controles, en este orden, y los cuatro son medibles por separado:
 
+0. Si el filtro de contenido del servicio bloquea la petición, no hay nada que validar: es un estado
+   propio (`BLOQUEADO`), que cuenta como callarse y se desglosa. No se disfraza de salida inválida.
 1. El modelo puede declarar `sin_respuesta` (la vía de abstención explícita).
 2. Si responde, tiene que citar, y cada cita se valida contra los artículos que *de verdad* se le
    dieron. Una cita inventada se descarta; una respuesta sin ninguna cita válida no se puede
@@ -69,6 +71,9 @@ def responder(
 ) -> Respuesta:
     completado = modelo.completar(prompt.sistema, prompt.usuario(pregunta, contextos))
     uso = completado.uso
+
+    if completado.bloqueo:
+        return Respuesta(estado=Estado.BLOQUEADO, bloqueado_por=completado.bloqueo, uso=uso)
 
     try:
         salida = _Salida.model_validate_json(_sin_valla_de_codigo(completado.texto))

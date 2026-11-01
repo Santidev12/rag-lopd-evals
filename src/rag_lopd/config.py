@@ -49,6 +49,18 @@ class Settings(BaseSettings):
     user_agent: str = "rag-lopd-evals/0.1 (proyecto de portfolio; contacto en el README)"
     """Identificarse es de buena educación y evita bloqueos. Nunca lo dejes en el de la librería."""
 
+    # --- Azure OpenAI (sin clave: se autentica con Entra ID) -----------------
+    azure_openai_endpoint: str | None = None
+    """URL del recurso, p. ej. `https://mi-recurso.openai.azure.com`. No es un secreto."""
+
+    azure_openai_deployment: str | None = None
+    """Nombre del **despliegue** del modelo (no el del modelo): es lo que va en la URL de la
+    llamada."""
+
+    azure_openai_api_version: str = "2024-10-21"
+    """Versión de la API de Azure OpenAI. Sin verificar contra la documentación: ajústala aquí si el
+    servicio la rechaza."""
+
     # --- Claves (nunca con valor por defecto real: van en .env) --------------
     deepinfra_api_key: str | None = Field(default=None, repr=False)
     google_api_key: str | None = Field(default=None, repr=False)

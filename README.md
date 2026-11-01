@@ -141,6 +141,8 @@ observación para recalcular sin volver a pagar:
 uv run rag-lopd generacion preguntar "..."   # recupera, genera y enseña cita y coste
 uv run rag-lopd generacion evaluar           # las 50 preguntas; llama a Gemini (céntimos); mide la latencia p50/p95
 uv run rag-lopd generacion evaluar --prompt v1   # reproduce la primera pasada
+uv run rag-lopd generacion evaluar --proveedor azure --precio-entrada <USD/M> --precio-salida <USD/M> --pasadas 3   # Azure OpenAI (Entra ID: antes, `az login`); el precio no se adivina
+uv run rag-lopd generacion comparar data/runs/<antes>.jsonl data/runs/<despues-1>.jsonl ...   # antes/después: tasas con intervalo, preguntas que cambian y estabilidad
 uv run rag-lopd generacion juzgar data/runs/<pasada>.jsonl   # juez (DeepSeek en DeepInfra): ¿es correcto el contenido?
 uv run rag-lopd informe data/runs/<pasada>.jsonl --juicios data/runs/<pasada>.juez-<...>.jsonl --recall data/recall.json   # el demo: un HTML estático en docs/informe.html
 uv run rag-lopd generacion calibrar <juicios>.jsonl eval/etiquetas-v2-preliminares.jsonl eval/etiquetas-v2-santiago.jsonl

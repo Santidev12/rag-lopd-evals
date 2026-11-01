@@ -7,6 +7,7 @@ llamar a nadie: ajustar cómo se reporta no debería costar dinero.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 from typing import Annotated
@@ -18,6 +19,9 @@ from rag_lopd.config import Settings, get_settings
 from rag_lopd.eval.almacen import leer as leer_eval_set
 from rag_lopd.eval.modelo import EvalSet, TipoPregunta
 from rag_lopd.generacion import deepinfra
+from rag_lopd.generacion.azure_openai import AzureOpenAIModelo
+from rag_lopd.generacion.comparacion import Pasada, formatear
+from rag_lopd.generacion.comparacion import comparar as comparar_pasadas
 from rag_lopd.generacion.contexto import contextos_para, indexar_articulos
 from rag_lopd.generacion.deepinfra import DeepInfraModelo
 from rag_lopd.generacion.evaluacion import (
@@ -53,6 +57,33 @@ app = typer.Typer(help="Generación: responder con cita o abstenerse, y medirlo.
 _EVAL_SET_POR_DEFECTO = Path("eval/candidatas-v0.jsonl")
 
 _MODELO = Annotated[str, typer.Option("--modelo", help="Modelo de Gemini.")]
+_PROVEEDOR = Annotated[str, typer.Option("--proveedor", help="Quién genera: gemini o azure.")]
+_DESPLIEGUE = Annotated[
+    str | None,
+    typer.Option(
+        "--despliegue",
+        help="Azure: nombre del despliegue del modelo (si no, AZURE_OPENAI_DEPLOYMENT en .env).",
+    ),
+]
+_PRECIO_ENTRADA = Annotated[
+    float | None,
+    typer.Option(
+        "--precio-entrada",
+        help="USD por millón de tokens de entrada. Obligatorio con azure: el precio no se adivina.",
+    ),
+]
+_PRECIO_SALIDA = Annotated[
+    float | None,
+    typer.Option(
+        "--precio-salida", help="USD por millón de tokens de salida (con azure, obligatorio)."
+    ),
+]
+
+PROVEEDORES = ("gemini", "azure")
+_FALTA_PRECIO = (
+    "Con --proveedor azure hay que pasar --precio-entrada y --precio-salida (USD por millón de "
+    "tokens, de la página de precios de tu tipo de despliegue): el precio no se adivina."
+)
 _PROMPT = Annotated[
     str,
     typer.Option("--prompt", help="Versión del prompt: v1 (base) o v2 (con vigencia)."),
@@ -95,23 +126,95 @@ def _elegir_prompt(version: str) -> Prompt:
         raise _fallar(f"Error: {error}") from error
 
 
+def _tarifa_explicita(entrada: float | None, salida: float | None) -> Tarifa | None:
+    """La tarifa que pasó quien ejecuta, o `None` si no pasó ninguna. Los dos precios van juntos."""
+    if entrada is None and salida is None:
+        return None
+    if entrada is None or salida is None:
+        raise _fallar("--precio-entrada y --precio-salida van juntos.")
+    return Tarifa(entrada_usd_mtok=entrada, salida_usd_mtok=salida)
+
+
+def _validar_proveedor(proveedor: str) -> None:
+    if proveedor not in PROVEEDORES:
+        raise _fallar(f"proveedor desconocido: {proveedor!r}. Usa {' o '.join(PROVEEDORES)}.")
+
+
+def _validar_generador(proveedor: str, entrada: float | None, salida: float | None) -> None:
+    """Falla pronto, antes de cargar el corpus o gastar nada, si faltan datos del generador."""
+    _validar_proveedor(proveedor)
+    tarifa = _tarifa_explicita(entrada, salida)
+    if proveedor == "azure" and tarifa is None:
+        raise _fallar(_FALTA_PRECIO)
+
+
+def _generador(
+    settings: Settings,
+    proveedor: str,
+    modelo: str,
+    despliegue: str | None,
+    entrada: float | None,
+    salida: float | None,
+) -> GeminiModelo | AzureOpenAIModelo:
+    """El modelo que genera. Con Gemini, la tarifa es la conocida salvo que se pase otra; con Azure
+    es obligatoria y explícita, porque el precio depende del tipo de despliegue."""
+    _validar_generador(proveedor, entrada, salida)
+    tarifa = _tarifa_explicita(entrada, salida)
+    if proveedor == "azure" and tarifa is not None:
+        return AzureOpenAIModelo(settings, tarifa=tarifa, despliegue=despliegue)
+    return GeminiModelo(settings, modelo=modelo, tarifa=tarifa)
+
+
+def _tarifa_de_la_pasada(
+    proveedor: str, modelo: str, entrada: float | None, salida: float | None
+) -> Tarifa:
+    """La tarifa para recalcular el coste de una pasada ya guardada, sin construir ningún
+    cliente."""
+    _validar_proveedor(proveedor)
+    explicita = _tarifa_explicita(entrada, salida)
+    if explicita is not None:
+        return explicita
+    if proveedor == "gemini":
+        try:
+            return tarifa_de(modelo)
+        except ValueError as error:
+            raise _fallar(f"Error: {error}") from error
+    raise _fallar(_FALTA_PRECIO)
+
+
+def _etiqueta_del_modelo(
+    settings: Settings, proveedor: str, modelo: str, despliegue: str | None
+) -> str:
+    """Cómo se nombra el modelo en el fichero de la pasada y en lo que se imprime."""
+    if proveedor == "azure":
+        return f"azure-{despliegue or settings.azure_openai_deployment or 'sin-despliegue'}"
+    return modelo
+
+
 @app.command()
 def preguntar(
     pregunta: Annotated[str, typer.Argument(help="La pregunta, en lenguaje natural.")],
     k: _K = 10,
     modelo: _MODELO = MODELO_POR_DEFECTO,
     prompt: _PROMPT = PROMPT_POR_DEFECTO.version,
+    proveedor: _PROVEEDOR = "gemini",
+    despliegue: _DESPLIEGUE = None,
+    precio_entrada: _PRECIO_ENTRADA = None,
+    precio_salida: _PRECIO_SALIDA = None,
 ) -> None:
     """Recupera, genera y enseña la respuesta (o la abstención) con su cita y su coste."""
     settings = get_settings()
     politica = _elegir_prompt(prompt)
+    _validar_generador(proveedor, precio_entrada, precio_salida)
     unidades, todas, ruta = _corpus_e_indice(settings)
     indice = indexar_articulos(todas)
 
     try:
         with (
             EmbebedorDeepInfra(settings) as embebedor,
-            GeminiModelo(settings, modelo=modelo) as llm,
+            _generador(
+                settings, proveedor, modelo, despliegue, precio_entrada, precio_salida
+            ) as llm,
         ):
             unidades_indice, vectores = indice_denso.cargar(ruta, unidades)
             recuperador = RecuperadorDenso(unidades_indice, vectores, embebedor)
@@ -129,6 +232,11 @@ def preguntar(
         typer.echo(f"Citas: {', '.join(str(c) for c in respuesta.citas)}")
     if respuesta.citas_descartadas:
         typer.echo(f"Citas descartadas (no estaban en el contexto): {respuesta.citas_descartadas}")
+    if respuesta.bloqueado_por:
+        typer.echo(
+            "Bloqueada por el filtro de contenido del servicio "
+            f"(origen: {respuesta.bloqueado_por})."
+        )
     typer.echo(
         f"Tokens: {respuesta.uso.tokens_entrada} entrada, {respuesta.uso.tokens_salida} salida "
         f"· {tarifa.coste_usd(respuesta.uso):.5f} USD"
@@ -154,6 +262,12 @@ def _imprimir_resumen(resumen: Resumen, tarifa: Tarifa) -> None:
             "las cifras de arriba.",
             fg=typer.colors.YELLOW,
         )
+    if resumen.bloqueadas:
+        typer.secho(
+            f"Bloqueadas por el filtro de contenido: {resumen.bloqueadas} "
+            "(ya cuentan como callarse en las tasas de arriba).",
+            fg=typer.colors.YELLOW,
+        )
     typer.echo(
         f"Tokens: {resumen.uso.tokens_entrada} entrada, {resumen.uso.tokens_salida} salida "
         f"· {tarifa.coste_usd(resumen.uso):.4f} USD en total"
@@ -173,47 +287,76 @@ def evaluar(
     k: _K = 10,
     modelo: _MODELO = MODELO_POR_DEFECTO,
     prompt: _PROMPT = PROMPT_POR_DEFECTO.version,
+    proveedor: _PROVEEDOR = "gemini",
+    despliegue: _DESPLIEGUE = None,
+    precio_entrada: _PRECIO_ENTRADA = None,
+    precio_salida: _PRECIO_SALIDA = None,
+    pasadas: Annotated[
+        int,
+        typer.Option(
+            "--pasadas", min=1, help="Cuántas pasadas seguidas; cada una va a su fichero."
+        ),
+    ] = 1,
 ) -> None:
     """Corre las preguntas aceptadas contra recuperación densa + generación y las resume.
 
     Llama al modelo de verdad (céntimos). Cada observación se guarda en `data/runs/` según
-    termina, para poder volver a resumirla con `resumir` sin repetir la llamada.
+    termina, para poder volver a resumirla con `resumir` sin repetir la llamada. Con `--pasadas`
+    se repite la medición entera, una vez por fichero, reutilizando el índice y el cliente.
     """
     settings = get_settings()
     politica = _elegir_prompt(prompt)
+    _validar_generador(proveedor, precio_entrada, precio_salida)
     unidades, todas, ruta = _corpus_e_indice(settings)
     eval_set = leer_eval_set(eval_set_path)
     indice = indexar_articulos(todas)
+    etiqueta = _etiqueta_del_modelo(settings, proveedor, modelo, despliegue)
 
-    sello = datetime.now().strftime("%Y%m%d-%H%M%S")
-    salida = settings.data_dir / "runs" / f"{modelo}-prompt{politica.version}-k{k}-{sello}.jsonl"
-    salida.parent.mkdir(parents=True, exist_ok=True)
+    def guardar_en(salida: Path) -> Callable[[Observacion], None]:
+        def guardar(observacion: Observacion) -> None:
+            with salida.open("a", encoding="utf-8") as fichero:
+                fichero.write(observacion.model_dump_json() + "\n")
+            typer.echo(f"  {observacion.pregunta_id} {observacion.respuesta.estado.value}")
 
-    def guardar(observacion: Observacion) -> None:
-        with salida.open("a", encoding="utf-8") as fichero:
-            fichero.write(observacion.model_dump_json() + "\n")
-        typer.echo(f"  {observacion.pregunta_id} {observacion.respuesta.estado.value}")
+        return guardar
 
     typer.echo(
-        f"{modelo} · prompt {politica.version} · k={k} · {len(eval_set.aceptadas())} preguntas"
+        f"{etiqueta} · prompt {politica.version} · k={k} · {len(eval_set.aceptadas())} preguntas"
+        + (f" · {pasadas} pasadas" if pasadas > 1 else "")
     )
+    ultima: Path | None = None
     try:
         with (
             EmbebedorDeepInfra(settings) as embebedor,
-            GeminiModelo(settings, modelo=modelo) as llm,
+            _generador(
+                settings, proveedor, modelo, despliegue, precio_entrada, precio_salida
+            ) as llm,
         ):
             unidades_indice, vectores = indice_denso.cargar(ruta, unidades)
             recuperador = RecuperadorDenso(unidades_indice, vectores, embebedor)
-            observaciones = evaluar_generacion(
-                llm, recuperador, indice, eval_set, k=k, prompt=politica, al_terminar=guardar
-            )
-            tarifa = llm.tarifa
+            for numero in range(1, pasadas + 1):
+                sello = datetime.now().strftime("%Y%m%d-%H%M%S")
+                sufijo = f"-p{numero}" if pasadas > 1 else ""
+                nombre = f"{etiqueta}-prompt{politica.version}-k{k}-{sello}{sufijo}.jsonl"
+                ultima = settings.data_dir / "runs" / nombre
+                ultima.parent.mkdir(parents=True, exist_ok=True)
+                if pasadas > 1:
+                    typer.echo(f"\nPasada {numero}/{pasadas}")
+                observaciones = evaluar_generacion(
+                    llm,
+                    recuperador,
+                    indice,
+                    eval_set,
+                    k=k,
+                    prompt=politica,
+                    al_terminar=guardar_en(ultima),
+                )
+                typer.echo(f"\nGuardado en {ultima}")
+                _imprimir_resumen(resumir(observaciones), llm.tarifa)
     except (ValueError, httpx.HTTPError) as error:
-        typer.secho(f"Error: {error}\nLo ya contestado queda en {salida}.", fg=typer.colors.RED)
+        donde = ultima if ultima is not None else settings.data_dir / "runs"
+        typer.secho(f"Error: {error}\nLo ya contestado queda en {donde}.", fg=typer.colors.RED)
         raise typer.Exit(code=1) from error
-
-    typer.echo(f"\nGuardado en {salida}")
-    _imprimir_resumen(resumir(observaciones), tarifa)
 
 
 @app.command("resumir")
@@ -221,16 +364,16 @@ def resumir_fichero(
     fichero: Annotated[Path, typer.Argument(help="Un fichero de data/runs/.")],
     modelo: _MODELO = MODELO_POR_DEFECTO,
     eval_set_path: Annotated[Path, typer.Option("--eval-set")] = _EVAL_SET_POR_DEFECTO,
+    proveedor: _PROVEEDOR = "gemini",
+    precio_entrada: _PRECIO_ENTRADA = None,
+    precio_salida: _PRECIO_SALIDA = None,
 ) -> None:
     """Recalcula las cifras de una pasada guardada, sin llamar a ningún modelo.
 
     Cuenta contra el eval set actual (tipo y fuente de cada pregunta), no contra el de cuando se
     hizo la pasada. Sin eval set a mano, usa lo que la pasada guardó y lo avisa.
     """
-    try:
-        tarifa = tarifa_de(modelo)
-    except ValueError as error:
-        raise _fallar(f"Error: {error}") from error
+    tarifa = _tarifa_de_la_pasada(proveedor, modelo, precio_entrada, precio_salida)
     eval_set = leer_eval_set(eval_set_path) if eval_set_path.exists() else None
     if eval_set is None:
         typer.secho(
@@ -241,6 +384,54 @@ def resumir_fichero(
     observaciones = leer_observaciones(fichero, eval_set)
     typer.echo(f"{fichero.name}: {len(observaciones)} observaciones")
     _imprimir_resumen(resumir(observaciones), tarifa)
+
+
+@app.command()
+def comparar(
+    antes: Annotated[Path, typer.Argument(help="La pasada de la línea base (el «antes»).")],
+    despues: Annotated[
+        list[Path], typer.Argument(help="Una o varias pasadas nuevas (el «después»).")
+    ],
+    eval_set_path: Annotated[Path, typer.Option("--eval-set")] = _EVAL_SET_POR_DEFECTO,
+    salida: Annotated[
+        Path | None, typer.Option("--salida", help="Guarda además la comparación en Markdown.")
+    ] = None,
+) -> None:
+    """Compara el antes con el después: tasas con intervalo, preguntas que cambian y estabilidad.
+
+    No llama a ningún modelo. Todas las pasadas se cuentan contra el eval set actual. La
+    conclusión por defecto es «sin diferencia demostrable»: solo se afirma una diferencia si los
+    intervalos de Wilson son disjuntos.
+    """
+    eval_set = leer_eval_set(eval_set_path) if eval_set_path.exists() else None
+    if eval_set is None:
+        typer.secho(
+            f"Aviso: no hay eval set en {eval_set_path}; se usan el tipo y la fuente de cada "
+            "pasada.",
+            fg=typer.colors.YELLOW,
+        )
+    etiquetas = {"antes": antes}
+    etiquetas.update({f"después {i}": ruta for i, ruta in enumerate(despues, start=1)})
+    pasadas = {
+        nombre: Pasada(nombre=nombre, observaciones=leer_observaciones(ruta, eval_set))
+        for nombre, ruta in etiquetas.items()
+    }
+    for nombre, ruta in etiquetas.items():
+        typer.echo(f"{nombre}: {ruta.name}")
+    typer.echo("")
+    try:
+        comparacion = comparar_pasadas(
+            pasadas["antes"], [p for n, p in pasadas.items() if n != "antes"]
+        )
+    except ValueError as error:
+        raise _fallar(f"Error: {error}") from error
+    texto = formatear(comparacion)
+    typer.echo(texto)
+    if salida is not None:
+        salida.parent.mkdir(parents=True, exist_ok=True)
+        leyenda = "\n".join(f"- {n}: `{r.name}`" for n, r in etiquetas.items())
+        salida.write_text(f"{leyenda}\n\n{texto}", encoding="utf-8")
+        typer.echo(f"Guardado en {salida}")
 
 
 # --- el juez ------------------------------------------------------------------------------------

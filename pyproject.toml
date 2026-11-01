@@ -9,6 +9,7 @@ authors = [{ name = "Santiago Pulido Díaz" }]
 keywords = ["rag", "evals", "retrieval", "rgpd", "lopdgdd", "legal-nlp", "spanish"]
 
 dependencies = [
+    "azure-identity>=1.27.0",
     "httpx>=0.27",
     "lxml>=5.2",
     "numpy>=1.26",

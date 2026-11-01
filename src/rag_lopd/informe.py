@@ -20,7 +20,7 @@ from html import escape
 from rag_lopd.eval.modelo import EvalSet, Pregunta, TipoPregunta
 from rag_lopd.generacion.evaluacion import Latencia, Observacion, Proporcion, resumir
 from rag_lopd.generacion.juez import Juicio, Veredicto, resumir_juicios
-from rag_lopd.generacion.modelo import Tarifa
+from rag_lopd.generacion.modelo import Estado, Tarifa
 from rag_lopd.retrieval.evaluacion import RecallMedido
 
 _NOMBRE_PASADA = re.compile(r"^(?P<modelo>.+)-prompt(?P<prompt>v\d+)-k(?P<k>\d+)-\d{8}-\d{6}")
@@ -68,6 +68,8 @@ def _veredicto(obs: Observacion, juicio: Juicio | None) -> tuple[str, str]:
     inventa un acierto que nadie comprobó.
     """
     if obs.debe_abstenerse:
+        if obs.respuesta.estado is Estado.BLOQUEADO:
+            return "ok", "Se calló, como debía (la bloqueó el filtro de contenido)"
         if obs.respuesta.se_abstiene:
             return "ok", "Se calló, como debía"
         if juicio is not None and juicio.veredicto is Veredicto.INCORRECTA:
@@ -79,6 +81,8 @@ def _veredicto(obs: Observacion, juicio: Juicio | None) -> tuple[str, str]:
                 "cuenta como sobre-respuesta y el juez la da por correcta",
             )
         return "falla", "Sobre-respuesta: contestó sin respuesta en el corpus"
+    if obs.respuesta.estado is Estado.BLOQUEADO:
+        return "falla", "Abstención indebida: el filtro de contenido bloqueó una pregunta legítima"
     if obs.respuesta.se_abstiene:
         return "falla", "Abstención indebida: calló teniendo la respuesta"
     if juicio is None:

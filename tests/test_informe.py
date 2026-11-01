@@ -250,6 +250,30 @@ def test_una_pasada_con_preguntas_que_el_eval_set_no_tiene_falla() -> None:
         )
 
 
+def test_una_respuesta_bloqueada_por_el_filtro_no_se_cuenta_como_fallo_del_modelo() -> None:
+    f, foc = TipoPregunta.FACTUAL, TipoPregunta.FUERA_DE_CORPUS
+    observaciones = [
+        _obs("e-001", f, Estado.BLOQUEADO, fuente=("rgpd:art-33.1",)),
+        _obs("e-002", f, Estado.ABSTIENE, fuente=("rgpd:art-33.1",)),
+        _obs("e-003", foc, Estado.BLOQUEADO),
+        _obs("e-004", foc, Estado.ABSTIENE),
+    ]
+    _, eval_set = _caso()
+
+    html = construir_informe(
+        observaciones,
+        eval_set,
+        modelo="m",
+        tarifa=TARIFA,
+        nombre_pasada=NOMBRE,
+        fecha=date(2026, 10, 21),
+    )
+
+    assert "el filtro de contenido bloqueó una pregunta legítima" in html
+    assert "Se calló, como debía (la bloqueó el filtro de contenido)" in html
+    assert "calló teniendo la respuesta" in html  # la abstención normal sigue distinguiéndose
+
+
 def test_el_comando_escribe_el_informe_desde_ficheros_guardados(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

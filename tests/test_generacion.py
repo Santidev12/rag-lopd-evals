@@ -404,6 +404,54 @@ def test_sin_cita_valida_y_salida_invalida_cuentan_como_callarse_en_las_metricas
     assert resumen.salidas_invalidas == 1
 
 
+class _ModeloBloqueado:
+    """Un servicio cuyo filtro de contenido bloquea siempre."""
+
+    nombre = "bloqueado"
+    tarifa = Tarifa(entrada_usd_mtok=1.0, salida_usd_mtok=1.0)
+
+    def __init__(self, origen: str) -> None:
+        self._origen = origen
+
+    def completar(self, sistema: str, usuario: str) -> Completado:
+        return Completado(
+            texto="", uso=Uso(tokens_entrada=10, tokens_salida=0), bloqueo=self._origen
+        )
+
+
+def test_un_bloqueo_del_filtro_es_un_estado_propio_y_no_una_salida_invalida() -> None:
+    respuesta = responder(_ModeloBloqueado("prompt"), "una pregunta", CONTEXTOS)
+
+    assert respuesta.estado is Estado.BLOQUEADO
+    assert respuesta.bloqueado_por == "prompt"
+    assert respuesta.se_abstiene
+    assert not respuesta.responde
+    assert respuesta.uso == Uso(tokens_entrada=10, tokens_salida=0)
+
+
+def test_un_bloqueo_cuenta_como_callarse_en_las_tasas_y_se_desglosa() -> None:
+    observaciones = [
+        # Sin respuesta en el corpus: callar bien, aunque sea por el filtro.
+        _obs("tr-1", TipoPregunta.TRAMPA, Estado.BLOQUEADO),
+        # Con respuesta: el filtro la bloquea, abstención indebida.
+        _obs("f-1", TipoPregunta.FACTUAL, Estado.BLOQUEADO, fuente=("rgpd:art-33.1",)),
+        _obs(
+            "f-2",
+            TipoPregunta.FACTUAL,
+            Estado.RESPONDE,
+            fuente=("rgpd:art-33.1",),
+            citas=("rgpd:art-33",),
+        ),
+    ]
+
+    resumen = resumir(observaciones)
+
+    assert resumen.sobre_respuesta == Proporcion(casos=1, exitos=0)
+    assert resumen.abstencion_indebida == Proporcion(casos=2, exitos=1)
+    assert resumen.bloqueadas == 2
+    assert resumen.salidas_invalidas == 0
+
+
 def test_contexto_completo_separa_fallos_de_retrieval_de_fallos_de_generacion() -> None:
     observaciones = [
         # El artículo llegó al modelo y aun así calló: fallo de generación.

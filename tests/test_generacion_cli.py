@@ -119,6 +119,150 @@ def test_resumir_con_un_modelo_sin_tarifa_falla_con_mensaje_claro(tmp_path: Path
     assert "no hay tarifa conocida" in resultado.output
 
 
+def _pasada_vacia(tmp_path: Path) -> Path:
+    fichero = tmp_path / "pasada.jsonl"
+    fichero.write_text("", encoding="utf-8")
+    return fichero
+
+
+def test_resumir_con_azure_sin_precio_falla_porque_el_precio_no_se_adivina(tmp_path: Path) -> None:
+    resultado = runner.invoke(
+        app, ["resumir", str(_pasada_vacia(tmp_path)), "--proveedor", "azure"]
+    )
+
+    assert resultado.exit_code == 1
+    assert "el precio no se adivina" in resultado.output
+
+
+def test_resumir_con_precio_explicito_calcula_el_coste(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    observaciones = [
+        _observacion("f-1", TipoPregunta.FACTUAL, Estado.RESPONDE),
+        _observacion("f-2", TipoPregunta.FACTUAL, Estado.RESPONDE),
+    ]
+    fichero = tmp_path / "pasada.jsonl"
+    fichero.write_text(
+        "\n".join(o.model_dump_json() for o in observaciones) + "\n", encoding="utf-8"
+    )
+
+    resultado = runner.invoke(
+        app,
+        [
+            "resumir",
+            str(fichero),
+            "--proveedor",
+            "azure",
+            "--precio-entrada",
+            "1",
+            "--precio-salida",
+            "2",
+        ],
+    )
+
+    # 2.000 tokens de entrada a 1 $/M + 200 de salida a 2 $/M = 0,0024 $
+    assert resultado.exit_code == 0, resultado.output
+    assert "0.0024 USD en total" in resultado.output
+
+
+def test_los_dos_precios_van_juntos(tmp_path: Path) -> None:
+    resultado = runner.invoke(
+        app, ["resumir", str(_pasada_vacia(tmp_path)), "--precio-entrada", "1"]
+    )
+
+    assert resultado.exit_code == 1
+    assert "van juntos" in resultado.output
+
+
+def test_un_proveedor_desconocido_falla_con_mensaje_claro(tmp_path: Path) -> None:
+    resultado = runner.invoke(
+        app, ["resumir", str(_pasada_vacia(tmp_path)), "--proveedor", "openai"]
+    )
+
+    assert resultado.exit_code == 1
+    assert "proveedor desconocido" in resultado.output
+
+
+def test_evaluar_con_azure_sin_precio_falla_antes_de_tocar_el_corpus() -> None:
+    resultado = runner.invoke(app, ["evaluar", "--proveedor", "azure"])
+
+    assert resultado.exit_code == 1
+    assert "el precio no se adivina" in resultado.output
+    assert "ingest" not in resultado.output  # no llegó a mirar el corpus
+
+
+def test_el_resumen_enseña_cuantas_respuestas_bloqueo_el_filtro(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    observaciones = [
+        _observacion("f-1", TipoPregunta.FACTUAL, Estado.BLOQUEADO),
+        _observacion("tr-1", TipoPregunta.TRAMPA, Estado.BLOQUEADO),
+    ]
+    fichero = tmp_path / "pasada.jsonl"
+    fichero.write_text(
+        "\n".join(o.model_dump_json() for o in observaciones) + "\n", encoding="utf-8"
+    )
+
+    resultado = runner.invoke(app, ["resumir", str(fichero)])
+
+    assert resultado.exit_code == 0, resultado.output
+    assert "Bloqueadas por el filtro de contenido: 2" in resultado.output
+
+
+def _guardar_pasada(ruta: Path, estados: dict[str, Estado]) -> Path:
+    tipos = {"f-1": TipoPregunta.FACTUAL, "f-2": TipoPregunta.FACTUAL, "tr-1": TipoPregunta.TRAMPA}
+    ruta.write_text(
+        "\n".join(_observacion(i, tipos[i], e).model_dump_json() for i, e in estados.items())
+        + "\n",
+        encoding="utf-8",
+    )
+    return ruta
+
+
+def test_comparar_enseña_los_cambios_y_no_afirma_diferencias_con_pocos_casos(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    antes = _guardar_pasada(
+        tmp_path / "gemini.jsonl",
+        {"f-1": Estado.RESPONDE, "f-2": Estado.ABSTIENE, "tr-1": Estado.ABSTIENE},
+    )
+    uno = _guardar_pasada(
+        tmp_path / "azure-1.jsonl",
+        {"f-1": Estado.RESPONDE, "f-2": Estado.RESPONDE, "tr-1": Estado.ABSTIENE},
+    )
+    dos = _guardar_pasada(
+        tmp_path / "azure-2.jsonl",
+        {"f-1": Estado.RESPONDE, "f-2": Estado.RESPONDE, "tr-1": Estado.ABSTIENE},
+    )
+    salida = tmp_path / "out" / "comparacion.md"
+
+    resultado = runner.invoke(
+        app, ["comparar", str(antes), str(uno), str(dos), "--salida", str(salida)]
+    )
+
+    assert resultado.exit_code == 0, resultado.output
+    assert "después 1: azure-1.jsonl" in resultado.output
+    assert "f-2 (factual): abstiene -> responde, responde [mejora]" in resultado.output
+    assert "sin diferencia demostrable" in resultado.output
+    assert "después 2" in salida.read_text(encoding="utf-8")
+
+
+def test_comparar_con_pasadas_de_preguntas_distintas_falla_con_mensaje_claro(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    antes = _guardar_pasada(tmp_path / "a.jsonl", {"f-1": Estado.RESPONDE, "f-2": Estado.ABSTIENE})
+    despues = _guardar_pasada(tmp_path / "b.jsonl", {"f-1": Estado.RESPONDE})
+
+    resultado = runner.invoke(app, ["comparar", str(antes), str(despues)])
+
+    assert resultado.exit_code == 1
+    assert "mismas preguntas" in resultado.output
+
+
 def test_preguntar_sin_corpus_dice_que_hay_que_ingerir() -> None:
     resultado = runner.invoke(app, ["preguntar", "¿plazo para notificar una brecha?"])
 

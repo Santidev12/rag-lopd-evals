@@ -93,6 +93,12 @@ class Completado(BaseModel):
     texto: str
     uso: Uso
 
+    bloqueo: str | None = None
+    """Si el **filtro de contenido del servicio** bloqueó la petición, de dónde vino: `"prompt"` (no
+    se llegó a generar nada) o `"salida"` (se generó y se cortó). `None` en el caso normal. Es
+    información del servicio, no una decisión del modelo: `responder` la convierte en
+    `Estado.BLOQUEADO`."""
+
 
 class ModeloDeLenguaje(Protocol):
     """Cualquier modelo cumple esto: instrucción de sistema y mensaje de usuario dentro, texto y
@@ -119,6 +125,11 @@ class Estado(StrEnum):
     SALIDA_INVALIDA = "salida_invalida"
     """El modelo no devolvió el JSON pedido. Es un fallo de formato, no una decisión."""
 
+    BLOQUEADO = "bloqueado"
+    """El filtro de contenido del servicio bloqueó la petición o la respuesta. Ni decisión del
+    modelo ni fallo de formato. Cuenta como callarse en las tasas (como cualquier abstención) y
+    se desglosa aparte para saber cuántas abstenciones fueron del filtro."""
+
 
 class Respuesta(BaseModel):
     model_config = ConfigDict(frozen=True)
@@ -131,6 +142,9 @@ class Respuesta(BaseModel):
 
     citas_descartadas: tuple[str, ...] = ()
     uso: Uso = Uso()
+
+    bloqueado_por: str = ""
+    """Solo con `Estado.BLOQUEADO`: `"prompt"` o `"salida"` (ver `Completado.bloqueo`)."""
 
     @property
     def responde(self) -> bool:

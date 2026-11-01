@@ -218,6 +218,10 @@ class Resumen:
     latencia_generacion: Latencia | None = None
     """El desglose de `latencia`, solo con las observaciones que lo midieron."""
 
+    bloqueadas: int = 0
+    """Respuestas bloqueadas por el filtro de contenido. **Ya cuentan como callarse** en las tasas
+    de arriba: este número dice cuántas de esas abstenciones fueron del filtro y no del modelo."""
+
 
 def resumir(observaciones: list[Observacion]) -> Resumen:
     sin_respuesta = [o for o in observaciones if o.debe_abstenerse]
@@ -267,6 +271,7 @@ def resumir(observaciones: list[Observacion]) -> Resumen:
             1 for o in observaciones if o.respuesta.estado is Estado.SALIDA_INVALIDA
         ),
         uso=uso,
+        bloqueadas=sum(1 for o in observaciones if o.respuesta.estado is Estado.BLOQUEADO),
         latencia=latencia_de([o.latencia_s for o in observaciones if o.latencia_s is not None]),
         latencia_recuperacion=latencia_de(
             [
