@@ -1,7 +1,7 @@
 # Cliente de Azure OpenAI y línea base de generación (3 pasadas)
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: 06 (resuelto)
 
 ## Question
