@@ -88,3 +88,9 @@ red (respx y un token de mentira) y **no se ha ejecutado contra el servicio real
     `uv run rag-lopd generacion comparar data\runs\gemini-3.5-flash-lite-promptv2-k10-20261022-114306.jsonl data\runs\<azure-p1>.jsonl data\runs\<azure-p2>.jsonl data\runs\<azure-p3>.jsonl --salida data\comparacion-generacion.md`
 11. Pegar las salidas (sin claves ni identificadores). Después se verifica el coste real en **Cost Management**
     y se cierra el ticket con la tabla.
+
+### Bloqueo en el paso 1 (2-nov-2026)
+`az cognitiveservices account create` en **westeurope** devolvió `RequestDisallowedByAzure`: "The selected
+region is currently not accepting new customers" (https://aka.ms/locationineligible). **No es el nombre del
+recurso.** Hay que elegir otra región europea. Pendiente: comprobar cuáles aceptan Azure OpenAI para esta
+suscripción y su cuota de `gpt-4.1-mini` (ver paso 3 del ticket).
