@@ -94,3 +94,11 @@ red (respx y un token de mentira) y **no se ha ejecutado contra el servicio real
 region is currently not accepting new customers" (https://aka.ms/locationineligible). **No es el nombre del
 recurso.** Hay que elegir otra región europea. Pendiente: comprobar cuáles aceptan Azure OpenAI para esta
 suscripción y su cuota de `gpt-4.1-mini` (ver paso 3 del ticket).
+
+### Prueba de humo superada (2-nov-2026)
+- Recurso `oai-rag-lopd-santi` en **Suecia Central** (West Europe rechazó la creación). Rol *Cognitive Services
+  OpenAI User* asignado. Despliegue `gpt-4-1-mini` (`gpt-4.1-mini` 2025-04-14, Standard, capacidad 20) creado.
+- `generacion preguntar --proveedor azure` respondió `responde`, con la cita `rgpd:art-33` y el plazo de 72 h.
+  4.855 tokens de entrada y 127 de salida: **0,00215 $ con la tarifa provisional de Global**.
+- **Pendiente antes de las tres pasadas:** la tarifa real de Standard en Suecia Central (se pasa con
+  `--precio-entrada` / `--precio-salida`).
