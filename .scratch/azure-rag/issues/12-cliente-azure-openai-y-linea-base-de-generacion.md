@@ -102,3 +102,36 @@ suscripción y su cuota de `gpt-4.1-mini` (ver paso 3 del ticket).
   4.855 tokens de entrada y 127 de salida: **0,00215 $ con la tarifa provisional de Global**.
 - **Pendiente antes de las tres pasadas:** la tarifa real de Standard en Suecia Central (se pasa con
   `--precio-entrada` / `--precio-salida`).
+
+### Resultados: tres pasadas de Azure (2-nov-2026), juzgadas con el juez j1 y comparadas con Gemini (22-oct)
+
+**Tasas** (todas con intervalo de Wilson; el "antes" es Gemini 3.5 Flash-Lite, prompt v2):
+
+| Métrica | Gemini | Azure p1 | Azure p2 | Azure p3 |
+| --- | --- | --- | --- | --- |
+| Sobre-respuesta | 1/16 (6 %) | 2/16 (12,5 %) | 2/16 (12,5 %) | 2/16 (12,5 %) |
+| Abstención indebida | 3/34 (8,8 %) | 0/34 | 1/34 | 0/34 |
+| Exactitud (juez) | 27/34 (79,4 %) | 30/34 (88,2 %) | 29/34 (85,3 %) | 29/34 (85,3 %) |
+
+Los intervalos se solapan en todas. **Sin diferencia demostrable.** La cita cubre la fuente cambia de base
+(31 para Gemini, 33-34 para Azure) porque Azure contesta más preguntas.
+
+**Cambios de estado (comportamiento):** e-021, e-024 y e-027 pasan de callar a contestar en las tres pasadas.
+e-044 pasa de callar a contestar en las tres. e-047 es inestable (contesta, calla, contesta).
+
+**Contenido (juez), inestable entre pasadas:** e-010 (incorrecta / correcta / parcial), e-044 (incorrecta /
+parcial / incorrecta), e-026 (parcial / parcial / correcta), y e-014, e-024, e-032 aparecen en una sola pasada.
+La comparación automática solo mide el comportamiento: el "1 de 50" del informe **no** mide la estabilidad
+del contenido.
+
+**Hallazgo de contenido, no de tasa:** en e-044 Azure afirma una cuantía mínima de 40.000 € que la norma no
+fija (el RGPD solo fija máximos). Es un error de contenido grave y se cuenta en las tres pasadas, aunque con
+n = 2 no se puede hablar de tasa.
+
+**Latencia:** p50 ≈ 3,8–4,7 s frente a 1,4 s de Gemini; p95 ≈ 34 s, casi todo en la generación. No está
+explicada (posible cola por la cuota o por reintentos; no verificado).
+
+**Coste:** 0,14 $ por pasada con la tarifa de trabajo (East US × 1,10, **deducción, no verificada**).
+
+**Pendiente:** bajar la capacidad del despliegue de 60 a 20; revisar a mano e-010, e-026 y e-044; decidir
+cómo se reporta e-044 en el README (¿error de contenido o fallo del juez?).
