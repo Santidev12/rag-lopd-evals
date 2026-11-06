@@ -153,3 +153,8 @@ Textos de las respuestas leídos en las tres pasadas; clasificación verificada 
 **Métricas afectadas:** ninguna tasa cambia de forma material. La sobre-respuesta grave pasa a 1/2 en la
 pasada 2. El juez j1 subestima e-044 en la pasada 2. Corregirlo exige una rúbrica nueva (j2) y repetir el juicio;
 no se hace ahora.
+
+### Capacidad restaurada (6-nov-2026)
+Despliegue `gpt-4-1-mini` en `oai-rag-lopd-santi`: `sku.capacity` = **20** (confirmado con
+`deployment show --query sku`). La cuota de 60 se usó solo durante las pasadas. Cambio hecho desde el portal,
+porque `deployment update` no existe con esos argumentos en la CLI 2.91.0.
