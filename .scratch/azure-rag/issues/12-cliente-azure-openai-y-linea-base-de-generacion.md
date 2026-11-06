@@ -135,3 +135,21 @@ explicada (posible cola por la cuota o por reintentos; no verificado).
 
 **Pendiente:** bajar la capacidad del despliegue de 60 a 20; revisar a mano e-010, e-026 y e-044; decidir
 cómo se reporta e-044 en el README (¿error de contenido o fallo del juez?).
+
+### Revisión a mano de e-010, e-026 y e-044 (6-nov-2026)
+
+Textos de las respuestas leídos en las tres pasadas; clasificación verificada en `lopdgdd:art-73` y `art-74`.
+
+- **e-010 (factual): inconsistencia del modelo, no del juez.** La pasada 2 menciona bloquear los datos
+  (correcta). Las pasadas 1 y 3 solo citan los arts. 16, 17 y 18 RGPD (incorrectas o parciales). La
+  referencia (`lopdgdd:art-32.1`) es el bloqueo, y no está en el RGPD.
+- **e-026 (cruzada): el juez acierta.** Las pasadas 1 y 2 dicen que no comunicar la brecha al afectado es
+  "infracción leve que prescribe al año". Es **grave, dos años** (`lopdgdd:art-73.s`). La pasada 3 no lo dice.
+- **e-044 (trampa): error real en las tres pasadas.** Azure afirma una multa mínima y la clasifica como leve.
+  Dos errores: el RGPD no fija mínimos, y el incumplimiento del art. 33 es **grave** (`art-73.r`), no leve.
+  La pasada 2 cita el art. 74 (leves) para algo que está en el art. 73. El juez la marcó "parcial", y
+  debería ser incorrecta: la sobre-respuesta grave es **1/2 en las tres pasadas**, no 0/2 en la 2.
+
+**Métricas afectadas:** ninguna tasa cambia de forma material. La sobre-respuesta grave pasa a 1/2 en la
+pasada 2. El juez j1 subestima e-044 en la pasada 2. Corregirlo exige una rúbrica nueva (j2) y repetir el juicio;
+no se hace ahora.
