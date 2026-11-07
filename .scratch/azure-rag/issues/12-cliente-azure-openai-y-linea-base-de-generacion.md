@@ -1,7 +1,7 @@
 # Cliente de Azure OpenAI y línea base de generación (3 pasadas)
 
 Type: task
-Status: claimed
+Status: resolved (7-nov-2026)
 Blocked by: 06 (resuelto)
 
 ## Question
@@ -179,3 +179,13 @@ porque `deployment update` no existe con esos argumentos en la CLI 2.91.0.
   no aparece en la captura. La moneda es USD (25 USD ≈ 23 €), no los 25 € acordados.
 - **Alerta de previsión al 100 % añadida (7-nov-2026)** a `budget-25`: el presupuesto tiene ahora cuatro
   alertas (tres de coste real y una de *Forecasted cost* al 100 %). Solo queda pendiente el grupo de East US.
+
+### Cierre (7-nov-2026)
+Pendientes del ticket resueltos:
+- **Tarifa:** $0,49 / $1,94 por millón (Standard regional, **Sweden Central**), confirmada. Sustituye a la tarifa de trabajo.
+- **Presupuesto:** `budget-25` (25 USD, cuenta de facturación), con alertas al 20 %, 40 %, 80 % y previsión al 100 %.
+- **Grupo de East US:** no existe en la suscripción. Solo queda `rg-rag-lopd` (West Europe), que contiene el recurso.
+- **Capacidad del despliegue:** 20, confirmada.
+
+**Abierto, pero no bloquea el cierre:** la decisión de cómo publicar e-044 en el README (error de contenido del
+modelo, no del juez). Es una decisión de Santiago, no un dato que falte.
