@@ -1,7 +1,7 @@
 # Azure AI Search: índice con vectores BGE-M3, recuperador y recall medido
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: 06, 07
 
 ## Question
