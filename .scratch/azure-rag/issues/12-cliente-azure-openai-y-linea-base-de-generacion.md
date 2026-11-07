@@ -169,3 +169,5 @@ porque `deployment update` no existe con esos argumentos en la CLI 2.91.0.
 - **Pendiente:** confirmar que la región seleccionada en la página es **Sweden Central**, porque la tabla
   no lo indica.
 - **Nota:** el código no descuenta tokens en caché, así que el coste calculado puede ser algo mayor que el real.
+
+- **Región confirmada por Santiago (7-nov-2026):** la tarifa $0,49 / $1,94 es de **Sweden Central**.
