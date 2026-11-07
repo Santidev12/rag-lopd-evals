@@ -171,3 +171,9 @@ porque `deployment update` no existe con esos argumentos en la CLI 2.91.0.
 - **Nota:** el código no descuenta tokens en caché, así que el coste calculado puede ser algo mayor que el real.
 
 - **Región confirmada por Santiago (7-nov-2026):** la tarifa $0,49 / $1,94 es de **Sweden Central**.
+
+- **Presupuesto confirmado (7-nov-2026):** `budget-25`, **25 USD** mensual, creado el 1-oct-2026, ámbito de
+  **cuenta de facturación** (por eso `az consumption budget list` a nivel de suscripción devolvía vacío).
+  Alertas de coste real al **20 % ($5), 40 % ($10) y 80 % ($20)**, avisos por correo (sin grupo de acciones).
+  Gasto evaluado en esa fecha: 0,47 USD. **Pendiente:** confirmar si existe la alerta de previsión al 100 %;
+  no aparece en la captura. La moneda es USD (25 USD ≈ 23 €), no los 25 € acordados.
