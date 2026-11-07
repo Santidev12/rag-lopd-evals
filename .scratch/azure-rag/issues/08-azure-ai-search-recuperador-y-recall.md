@@ -63,3 +63,10 @@ se ha ejecutado contra un servicio real**.
 ### Riesgos conocidos
 - Ni el nivel Free ni la cuota del índice vectorial están confirmados en fuente primaria (ver el informe de
   investigación). Si el índice no cabe, el indexado falla con un error claro, no en silencio.
+
+### Servicio creado (7-nov-2026)
+- `rg-rag-lopd-search`, SKU **free**, **Sweden Central**, grupo `rg-rag-lopd`, endpoint
+  `https://rg-rag-lopd-search.search.windows.net`. Estado `Succeeded`.
+- Dato del propio servicio: `semanticSearch: free`. Es el plan gratuito del ranker semántico (1.000 consultas al
+  mes). El experimento sigue sin usarlo, por decisión del ticket de presupuesto, pero queda confirmado que existe.
+- Pendiente: clave de administración en `.env` y `indexar-azure`.
