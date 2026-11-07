@@ -70,3 +70,5 @@ se ha ejecutado contra un servicio real**.
 - Dato del propio servicio: `semanticSearch: free`. Es el plan gratuito del ranker semántico (1.000 consultas al
   mes). El experimento sigue sin usarlo, por decisión del ticket de presupuesto, pero queda confirmado que existe.
 - Pendiente: clave de administración en `.env` y `indexar-azure`.
+- **Indexado (7-nov-2026):** `indexar-azure` subió **728 documentos** con vectores de **1024 dimensiones** al índice
+  `rag-lopd-v0`, sin errores. Pendiente: medir las cuatro configuraciones y el control de cordura.
