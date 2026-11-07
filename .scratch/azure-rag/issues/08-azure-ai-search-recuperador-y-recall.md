@@ -72,3 +72,22 @@ se ha ejecutado contra un servicio real**.
 - Pendiente: clave de administración en `.env` y `indexar-azure`.
 - **Indexado (7-nov-2026):** `indexar-azure` subió **728 documentos** con vectores de **1024 dimensiones** al índice
   `rag-lopd-v0`, sin errores. Pendiente: medir las cuatro configuraciones y el control de cordura.
+
+### Resultados (7-nov-2026): recall a nivel artículo, sin ruta jerárquica, 28 preguntas
+
+| Configuración | @5 | @10 | @20 |
+| --- | --- | --- | --- |
+| A. Local denso (22-oct) | 22/28 (78,6 %) | 25/28 (89,3 %) | 26/28 (92,9 %) |
+| C. Azure vectorial exacto | 22/28 | 25/28 | 26/28 |
+| B. Azure vectorial (HNSW) | 22/28 | 25/28 | 26/28 |
+| E. Azure híbrido | 22/28 | 25/28 | 25/28 |
+| D. Azure BM25 | 13/28 (46,4 %) | 17/28 (60,7 %) | 19/28 (67,9 %) |
+
+- **Control de cordura superado:** C reproduce A celda por celda, con los mismos fallos. La migración del índice es fiel.
+- **HNSW no pierde nada** frente a la búsqueda exacta a este tamaño (B = C en todas las celdas).
+- **Híbrido = vectorial** salvo @20, donde pierde e-026 (25 frente a 26). No llega al umbral de "empeora" (−2 netas en @10).
+- **BM25 en Azure** (es.microsoft) queda muy por debajo del denso. **No comparable** directamente con el BM25 local publicado (48,1 %, sobre 27 preguntas y otra implementación). Para compararlo bien hay que repetir el BM25 local sobre las 28 actuales.
+- **Regla fijada de antemano:** no hay mejora (+2 netas en @10 sin pérdida en @5/@20). Ningún motor empeora. **v1 = Azure híbrido**, por la regla acordada. El informe dirá "migré; la calidad no mejora". Como el híbrido no añade nada sobre el vectorial, es una decisión de coherencia con la regla, no de rendimiento.
+- Fallos persistentes (todas las configuraciones densas): e-021, e-024, e-026, las mismas tres del diagnóstico anterior.
+
+**Pendiente:** repetir el BM25 local sobre las 28 preguntas actuales, para cerrar la comparación del control léxico.
