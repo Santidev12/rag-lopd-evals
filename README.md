@@ -127,6 +127,8 @@ uv run rag-lopd retrieval indexar               # construye el índice denso (un
 uv run rag-lopd retrieval evaluar --motor bm25   # o --motor denso
 uv run rag-lopd retrieval evaluar --motor denso --k 5 --k 10 --k 20 --guardar data/recall.json   # recall@5/@10/@20 de una vez
 uv run rag-lopd retrieval buscar "..." --motor denso
+uv run rag-lopd retrieval indexar-azure         # sube el índice a Azure AI Search (una vez; vectores del denso local)
+uv run rag-lopd retrieval evaluar --motor azure-vectorial-exacto --k 5 --k 10 --k 20   # o azure-vectorial, azure-bm25, azure-hibrido
 ```
 
 La generación recibe los artículos recuperados (el artículo entero, no el apartado) y devuelve

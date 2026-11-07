@@ -30,3 +30,36 @@ retriever queda como el de v1.
   incluye la lista de preguntas que cambian de estado.
 - Un índice por configuración de texto o vectorial cabe en el nivel Free (3 índices, 50 MB): contarlos al
   diseñar el esquema para no pasarse de 3.
+
+## Progreso (7-nov-2026): código hecho; falta el servicio y medir
+
+Ticket aún **abierto**: el agente no llega a Azure, así que el código está probado con un cliente falso y **no
+se ha ejecutado contra un servicio real**.
+
+### Entregado (rama `azure-rag/mapa`)
+- `retrieval/azure_search.py`: `RecuperadorAzureSearch` con los cuatro modos (`vectorial`, `vectorial-exacto`,
+  `bm25`, `hibrido`), que cumple el contrato `Recuperador`. Un solo índice (`rag-lopd-v0`) y un solo campo
+  vectorial: la búsqueda exacta es el mismo campo con `exhaustive=True`.
+- **Decisiones que el ticket pedía fijar antes de medir:**
+  - Analizador: `es.microsoft` (lematiza). `es.lucene` queda sin probar.
+  - Clave del documento: `rgpd:art-33.1` → `rgpd--art-33_1` (Azure no admite `:` ni `.`). El identificador
+    original va en un campo recuperable; la traducción es reversible.
+  - Vectores: se suben los del denso local (`denso-sin-ruta.npz`), sin volver a embeber.
+- CLI: `retrieval indexar-azure` (crea o actualiza el índice y sube los documentos) y
+  `retrieval evaluar --motor azure-...`.
+- Autenticación: clave de administración en `.env` si está; si no, Entra ID.
+- Pruebas: 17 tests con cliente falso (claves, esquema, documentos, forma de cada consulta, traducción de
+  resultados). `ruff`, `mypy` y `pytest` en verde.
+
+### Pendiente (lo ejecuta Santiago)
+1. **Crear el servicio** en el nivel Free (sin coste), en `swedencentral`, con el grupo `rg-rag-lopd`. El nombre es
+   global en Azure: `az search service create --name <servicio> --resource-group rg-rag-lopd --sku free --location swedencentral`
+   *(de memoria, sin verificar)*.
+2. **Clave de administración** → `.env` (`AZURE_SEARCH_ENDPOINT`, `AZURE_SEARCH_API_KEY`). **No pegarla en el chat.**
+3. **Indexar:** `uv run rag-lopd retrieval indexar-azure`. Aquí se verá si alguna clave del corpus real no cabe en
+   la traducción (la función lo rechaza con error).
+4. **Medir** las cuatro configuraciones con `--guardar`, y la comparación con el local.
+
+### Riesgos conocidos
+- Ni el nivel Free ni la cuota del índice vectorial están confirmados en fuente primaria (ver el informe de
+  investigación). Si el índice no cabe, el indexado falla con un error claro, no en silencio.

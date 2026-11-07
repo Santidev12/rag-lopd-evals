@@ -18,7 +18,7 @@ from rag_lopd.config import Settings, get_settings
 from rag_lopd.eval.almacen import leer as leer_eval_set
 from rag_lopd.eval.modelo import EvalSet
 from rag_lopd.model import UnidadIndexable
-from rag_lopd.retrieval import abstencion, indice_denso
+from rag_lopd.retrieval import abstencion, azure_search, indice_denso
 from rag_lopd.retrieval.bm25 import RecuperadorBM25
 from rag_lopd.retrieval.corpus import cargar_unidades
 from rag_lopd.retrieval.denso import RecuperadorDenso
@@ -26,7 +26,14 @@ from rag_lopd.retrieval.embeddings import MODELO, EmbebedorDeepInfra
 from rag_lopd.retrieval.evaluacion import Nivel, RecallMedido, evaluar_recall
 
 _NIVELES: tuple[Nivel, ...] = ("apartado", "articulo")
-_MOTORES = ("bm25", "denso")
+_MODOS_AZURE: dict[str, azure_search.Modo] = {
+    "azure-vectorial": "vectorial",
+    "azure-vectorial-exacto": "vectorial-exacto",
+    "azure-bm25": "bm25",
+    "azure-hibrido": "hibrido",
+}
+"""Motores de Azure AI Search y su modo (las configuraciones del experimento)."""
+_MOTORES = ("bm25", "denso", *_MODOS_AZURE)
 
 app = typer.Typer(help="Recuperación: los motores disponibles y su medida contra el eval set.")
 
@@ -87,6 +94,31 @@ def _evaluar_bm25(
     return medidos
 
 
+def _evaluar_azure(
+    settings: Settings, eval_set: EvalSet, ks: list[int], motor: str
+) -> list[RecallMedido]:
+    """Un motor de Azure, a nivel artículo y apartado, sin ruta jerárquica (ticket 11).
+
+    Los vectores de la consulta salen de DeepInfra, igual que en el denso local."""
+    modo = _MODOS_AZURE[motor]
+    cliente = azure_search.cliente_de_busqueda(settings)
+    medidos: list[RecallMedido] = []
+    with EmbebedorDeepInfra(settings) as embebedor:
+        recuperador = azure_search.RecuperadorAzureSearch(cliente, embebedor, modo=modo)
+        for nivel in _NIVELES:
+            for k in ks:
+                resultado = evaluar_recall(recuperador, eval_set, k=k, nivel=nivel)
+                medidos.append(RecallMedido.de(motor, False, resultado))
+                typer.echo(
+                    f"{motor} (nivel {nivel}) @k={k}: "
+                    f"{resultado.aciertos}/{resultado.total} = {resultado.recall:.1%}"
+                )
+                if resultado.fallos:
+                    typer.echo(f"  falladas: {', '.join(resultado.fallos)}")
+    typer.echo("")
+    return medidos
+
+
 def _evaluar_denso(
     settings: Settings, unidades: list[UnidadIndexable], eval_set: EvalSet, ks: list[int]
 ) -> list[RecallMedido]:
@@ -120,6 +152,53 @@ def _evaluar_denso(
     return medidos
 
 
+@app.command("indexar-azure")
+def indexar_azure(
+    lote: Annotated[int, typer.Option("--lote", min=1, max=1000)] = 100,
+) -> None:
+    """Crea o actualiza el índice de Azure AI Search y sube las unidades con sus vectores.
+
+    Reutiliza `denso-sin-ruta.npz` en vez de volver a embeber: así el único cambio entre el denso
+    local y Azure es el motor de búsqueda. Es idempotente: `merge_or_upload` sobrescribe.
+    """
+    settings = get_settings()
+    unidades = cargar_unidades(settings.processed_dir)
+    _exigir_corpus(unidades, settings)
+    ruta = indice_denso.ruta_indice(settings, con_ruta=False)
+    if not ruta.exists():
+        typer.secho(
+            f"No existe {ruta}. Constrúyelo con 'rag-lopd retrieval indexar --sin-ruta'.",
+            fg=typer.colors.RED,
+        )
+        raise typer.Exit(code=1)
+    unidades_indice, vectores = indice_denso.cargar(ruta, unidades)
+
+    try:
+        cliente_indices = azure_search.cliente_de_indices(settings)
+        cliente_indices.create_or_update_index(
+            azure_search.definir_indice(settings.azure_search_index)
+        )
+        typer.echo(f"Índice «{settings.azure_search_index}» listo.")
+
+        documentos = azure_search.documentos(unidades_indice, vectores)
+        cliente = azure_search.cliente_de_busqueda(settings)
+        for inicio in range(0, len(documentos), lote):
+            trozo = documentos[inicio : inicio + lote]
+            resultados = cliente.merge_or_upload_documents(documents=trozo)
+            fallidos = [r.key for r in resultados if not r.succeeded]
+            if fallidos:
+                typer.secho(
+                    f"Fallaron {len(fallidos)} documentos: {fallidos[:5]}", fg=typer.colors.RED
+                )
+                raise typer.Exit(code=1)
+        typer.echo(
+            f"{len(documentos)} documentos subidos con vector de {vectores.shape[1]} dimensiones."
+        )
+    except ValueError as error:
+        typer.secho(f"Error: {error}", fg=typer.colors.RED)
+        raise typer.Exit(code=1) from error
+
+
 @app.command()
 def evaluar(
     eval_set_path: Annotated[Path, typer.Option("--eval-set")] = _EVAL_SET_POR_DEFECTO,
@@ -127,7 +206,15 @@ def evaluar(
         list[int] | None,
         typer.Option("--k", help="Cuántos resultados cuentan como top-k. Repetible: --k 5 --k 20."),
     ] = None,
-    motor: Annotated[str, typer.Option("--motor", help="bm25 o denso.")] = "bm25",
+    motor: Annotated[
+        str,
+        typer.Option(
+            "--motor",
+            help=(
+                "bm25, denso, azure-vectorial, azure-vectorial-exacto, azure-bm25 o azure-hibrido."
+            ),
+        ),
+    ] = "bm25",
     guardar: Annotated[
         Path | None,
         typer.Option("--guardar", help="Guarda las cifras en este JSON, para `rag-lopd informe`."),
@@ -151,6 +238,8 @@ def evaluar(
 
     if motor == "bm25":
         medidos = _evaluar_bm25(unidades, eval_set, ks)
+    elif motor in _MODOS_AZURE:
+        medidos = _evaluar_azure(settings, eval_set, ks, motor)
     else:
         medidos = _evaluar_denso(settings, unidades, eval_set, ks)
 

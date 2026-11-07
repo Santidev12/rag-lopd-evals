@@ -61,9 +61,18 @@ class Settings(BaseSettings):
     """Versión de la API de Azure OpenAI. Sin verificar contra la documentación: ajústala aquí si el
     servicio la rechaza."""
 
+    # --- Azure AI Search (sin clave por defecto: se autentica con clave o con Entra ID) ---
+    azure_search_endpoint: str | None = None
+    """URL del servicio, p. ej. `https://<servicio>.search.windows.net`. No es un secreto."""
+
+    azure_search_index: str = "rag-lopd-v0"
+    """Nombre del índice. Uno solo: cubre las cuatro configuraciones de Azure
+    (vectorial, exacto, BM25 e híbrido)."""
+
     # --- Claves (nunca con valor por defecto real: van en .env) --------------
     deepinfra_api_key: str | None = Field(default=None, repr=False)
     google_api_key: str | None = Field(default=None, repr=False)
+    azure_search_api_key: str | None = Field(default=None, repr=False)
 
     @property
     def raw_dir(self) -> Path:
