@@ -158,3 +158,14 @@ no se hace ahora.
 Despliegue `gpt-4-1-mini` en `oai-rag-lopd-santi`: `sku.capacity` = **20** (confirmado con
 `deployment show --query sku`). La cuota de 60 se usó solo durante las pasadas. Cambio hecho desde el portal,
 porque `deployment update` no existe con esos argumentos en la CLI 2.91.0.
+
+### Tarifa real de Standard regional (7-nov-2026), leída de la página de precios
+
+- `gpt-4.1-mini` (2025-04-14), fila **Regional**: entrada **$0,49**, salida **$1,94** por millón de tokens
+  (caché de entrada: $0,13, no usada por el código).
+- **Corrección:** la tarifa de trabajo anterior (0,484 / 1,936) estaba mal derivada. Usó la fila Data Zone
+  (0,44 / 1,76) como si fuera el regional de East US. El "+10 %" no era un dato. La diferencia real es
+  pequeña: unos 0,002 $ por pasada.
+- **Pendiente:** confirmar que la región seleccionada en la página es **Sweden Central**, porque la tabla
+  no lo indica.
+- **Nota:** el código no descuenta tokens en caché, así que el coste calculado puede ser algo mayor que el real.
